@@ -4,4 +4,4 @@ backend/models/__init__.py
 backend/services/__init__.py
 
 frontend/__init__.py
-
+.env
