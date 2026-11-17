@@ -1,0 +1,7 @@
+backend/__init__.py
+backend/controllers/__init__.py
+backend/models/__init__.py
+backend/services/__init__.py
+
+frontend/__init__.py
+
