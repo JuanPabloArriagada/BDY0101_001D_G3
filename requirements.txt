@@ -1,0 +1,9 @@
+fastapi  # Crea la API del backend.
+uvicorn[standard]  # Ejecuta el servidor de la API.
+pymongo  # Permite trabajar con la base de datos MongoDB.
+pydantic-settings  # Carga y valida la configuración de la aplicación.
+streamlit  # Crea la interfaz web del proyecto.
+requests  # Envía solicitudes HTTP a la API.
+plotly  # Crea gráficos interactivos.
+pandas  # Organiza y analiza datos en tablas.
+python-dotenv  # Carga variables de entorno desde un archivo .env.
