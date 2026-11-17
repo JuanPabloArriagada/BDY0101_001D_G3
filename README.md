@@ -1,0 +1,110 @@
+# Eventify Global
+
+Proyecto de la Evaluación 3 de Bases de Datos No Relacionales (BDY0101).
+
+## Configuración del entorno de desarrollo
+
+Requisito: Python 3.14.x de 64 bits con los módulos `venv` y `pip` disponibles.
+El intérprete local utilizado para preparar el entorno es Python 3.14.4.
+
+### Clonar el repositorio
+
+```bash
+git clone https://github.com/JuanPabloArriagada/BDY0101_001D_G3.git
+cd BDY0101_001D_G3
+```
+
+Si ya tienes el repositorio, abre una terminal en su carpeta raíz.
+
+### Crear y activar el entorno en Windows PowerShell
+
+Comprueba que `python` corresponde a Python 3.14.x. Crea `.venv` solo si todavía
+no existe y actívalo:
+
+```powershell
+python --version
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+Si `python` no está disponible o apunta a Microsoft Store, utiliza la ruta del
+intérprete instalado para crear el entorno, por ejemplo:
+
+```powershell
+& 'C:\ruta\a\Python\python.exe' -m venv .venv
+```
+
+Si PowerShell bloquea la activación, puedes instalar las dependencias y
+comprobarlas usando directamente el intérprete del entorno:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip check
+```
+
+### Crear y activar el entorno en Linux/macOS
+
+Con Python 3.14 instalado, crea `.venv` solo si todavía no existe y actívalo:
+
+```bash
+python3.14 --version
+python3.14 -m venv .venv
+source .venv/bin/activate
+```
+
+### Instalar y verificar las dependencias
+
+Con el entorno activado, los comandos son los mismos en ambos sistemas:
+
+```bash
+python --version
+python -m pip install -r requirements.txt
+python -m pip check
+python -c "import fastapi, uvicorn, pymongo, pydantic_settings, streamlit, requests, plotly, pandas, dotenv; print('Importaciones correctas')"
+```
+
+`requirements.txt` contiene las nueve dependencias del proyecto con comentarios
+sobre su propósito. Sus rangos permiten actualizaciones de corrección dentro de
+la misma versión menor; `pip` resuelve e instala las dependencias indirectas.
+
+### Desactivar el entorno virtual
+
+```bash
+deactivate
+```
+
+El entorno `.venv/` se recrea localmente y está excluido de Git, junto con las
+cachés, los archivos `.env` y `.streamlit/secrets.toml`. `.env.example` puede
+versionarse como plantilla sin credenciales.
+
+Referencia: [documentación oficial de venv](https://docs.python.org/3.14/library/venv.html).
+
+## Base de datos de la Evaluación 2
+
+El archivo [G3_Arriagada_Gonzales_001D.mongodb.js](scripts/G3_Arriagada_Gonzales_001D.mongodb.js)
+conserva íntegramente el script original de la Evaluación 2 como respaldo y
+punto de partida para la futura integración con FastAPI.
+
+**Advertencia: el script contiene `db.dropDatabase()` después de seleccionar
+`eventify_db`. Al ejecutarlo, elimina todas las colecciones y los datos existentes
+de esa base antes de volver a crear las colecciones y cargar los datos de prueba.**
+
+El script inicializa `eventify_db` y crea las colecciones `usuarios`, `eventos`,
+`ordenes_compra` y `resenas_evaluaciones`. Cada colección utiliza validaciones
+estrictas mediante `$jsonSchema`, con campos obligatorios, tipos BSON y
+restricciones de valores. Combina documentos embebidos para recintos y tickets
+con referencias entre usuarios, eventos, órdenes y reseñas.
+
+Genera e inserta 50 documentos de prueba por colección (200 en total) e incluye
+consultas `find()` para revisar la carga. Sus cuatro consultas de agregación son:
+
+- Compras confirmadas de `usuario1@eventify.cl` para eventos en Santiago, con
+  detalle de tickets y gasto total.
+- Recaudación, tickets vendidos y porcentaje de venta por evento, con la etiqueta
+  `Exitoso` cuando las ventas alcanzan al menos el 70 % del stock inicial.
+- Eventos futuros programados en Santiago con tickets disponibles de precio
+  inferior a 25000.
+- Clientes frecuentes con al menos dos compras confirmadas y su gasto acumulado.
+
+El archivo se incorpora como referencia, sin ejecutarlo ni realizar operaciones
+sobre MongoDB.
