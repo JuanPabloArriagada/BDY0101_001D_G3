@@ -153,5 +153,30 @@ uvicorn backend.main:app --reload
 - Swagger: [http://localhost:8000/docs](http://localhost:8000/docs).
 
 `backend/main.py` crea la aplicación FastAPI, registra los cinco routers y define
-`GET /` para comprobar que la API funciona. Los controladores todavía no tienen
-operaciones propias, por lo que aún no aparecerán como operaciones en Swagger.
+`GET /` para comprobar que la API funciona. El controlador de eventos expone los
+dos endpoints de lectura; los demás controladores aún no tienen operaciones propias.
+
+## Consultar eventos
+
+- `GET /api/v1/eventos/`: devuelve todos los eventos, o `[]` si no hay documentos.
+- `GET /api/v1/eventos/{id}`: devuelve el evento cuyo `_id` coincida con el
+  identificador recibido. Responde `400` si el formato del ID es inválido y `404`
+  si el evento no existe.
+
+Ambos endpoints aparecen en Swagger, convierten los ObjectId a texto y solo
+realizan consultas de lectura a MongoDB.
+
+## Crear eventos
+
+`POST /api/v1/eventos/` recibe los datos mediante el modelo Pydantic `Evento`.
+El servicio convierte el modelo con `model_dump()` e inserta el documento con
+`insert_one()`, dejando que se asigne `_id` automáticamente.
+
+Si la inserción es correcta, devuelve HTTP `200`:
+
+```json
+{"mensaje": "Evento agregado correctamente"}
+```
+
+FastAPI responde `422` si los datos no cumplen con el modelo. Si MongoDB rechaza
+el documento por su esquema de validación (código `121`), responde `400`.
