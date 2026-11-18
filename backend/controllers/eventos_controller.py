@@ -2,7 +2,12 @@ from bson.errors import InvalidId
 from fastapi import APIRouter, HTTPException
 from pymongo.errors import WriteError
 from backend.models.evento import Evento
-from backend.services.eventos_service import listar_eventos, buscar_evento_por_id, agregar_evento
+from backend.services.eventos_service import (
+    listar_eventos,
+    buscar_evento_por_id,
+    agregar_evento,
+    modificar_evento,
+)
 
 router = APIRouter(prefix="/api/v1/eventos", tags=["Eventos"])
 
@@ -36,3 +41,23 @@ def crear_evento(evento: Evento):
                 detail="El evento no cumple con las reglas de la colección.",
             ) from None
         raise
+
+
+@router.put("/{id}")
+def actualizar_evento(id: str, evento: Evento):
+    try:
+        encontrado = modificar_evento(id, evento)
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="ID de evento no válido.") from None
+    except WriteError as error:
+        if error.code == 121:
+            raise HTTPException(
+                status_code=400,
+                detail="El evento no cumple con las reglas de la colección.",
+            ) from None
+        raise
+
+    if not encontrado:
+        raise HTTPException(status_code=404, detail="Evento no encontrado.")
+
+    return {"mensaje": "Evento actualizado correctamente"}

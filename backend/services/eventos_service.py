@@ -17,3 +17,11 @@ def agregar_evento(evento: Evento):
     documento = evento.model_dump()
     get_database().eventos.insert_one(documento)
     return {"mensaje": "Evento agregado correctamente"}
+
+
+def modificar_evento(id: str, evento: Evento):
+    resultado = get_database().eventos.update_one(
+        {"_id": ObjectId(id)},
+        {"$set": evento.model_dump()},
+    )
+    return resultado.matched_count > 0

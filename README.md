@@ -180,3 +180,15 @@ Si la inserción es correcta, devuelve HTTP `200`:
 
 FastAPI responde `422` si los datos no cumplen con el modelo. Si MongoDB rechaza
 el documento por su esquema de validación (código `121`), responde `400`.
+
+## Actualizar eventos
+
+`PUT /api/v1/eventos/{id}` recibe el modelo `Evento` completo. El servicio utiliza
+`update_one()` con `$set` para actualizar sus campos, sin modificar `_id`.
+Comprueba la existencia mediante `matched_count`, por lo que un evento existente
+con datos idénticos también se considera actualizado correctamente.
+
+- `200`: `{"mensaje": "Evento actualizado correctamente"}`.
+- `400`: ID inválido o rechazo del esquema de MongoDB (código `121`).
+- `404`: evento no encontrado.
+- `422`: datos incompletos o tipos incorrectos para el modelo.
