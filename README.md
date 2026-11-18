@@ -206,3 +206,26 @@ por lo que se conservan el historial y las referencias existentes.
 - `404`: `Evento no encontrado.`
 
 Los GET actuales siguen mostrando los eventos desactivados, sin filtros nuevos.
+
+## Gestionar usuarios
+
+| Endpoint | Función |
+|---|---|
+| `GET /api/v1/usuarios/` | Lista todos los usuarios, incluidos los inactivos; devuelve `[]` si no hay documentos. |
+| `GET /api/v1/usuarios/{id}` | Consulta un usuario por su ObjectId. |
+| `POST /api/v1/usuarios/` | Crea un usuario y devuelve `{"mensaje": "Usuario agregado correctamente"}` con HTTP `200`. |
+| `PUT /api/v1/usuarios/{id}` | Actualiza el usuario y devuelve `{"mensaje": "Usuario actualizado correctamente"}` con HTTP `200`. |
+| `DELETE /api/v1/usuarios/{id}` | Establece `activo: false` y devuelve `{"mensaje": "Usuario desactivado correctamente"}` con HTTP `200`. |
+
+POST y PUT reciben el modelo `Usuario` completo y utilizan `model_dump()`,
+conservando las fechas como fechas BSON. MongoDB asigna `_id` al crear el usuario;
+la actualización no lo modifica. PUT y DELETE comprueban `matched_count`, por lo
+que los datos idénticos o un usuario ya inactivo también se consideran exitosos.
+
+Un ID inválido devuelve `400`, un usuario inexistente devuelve `404` y los datos
+incompletos o con tipos incorrectos devuelven `422`. En POST y PUT, un rechazo del
+esquema MongoDB (código `121`) devuelve `400`. Las reglas de nombre, correo y rol
+(`cliente` o `administrador`) se mantienen en MongoDB, sin añadir correo único.
+
+El soft delete conserva los demás datos del usuario, sus órdenes y sus reseñas.
+Los documentos recuperados se serializan para devolver ObjectId y fechas en JSON.
