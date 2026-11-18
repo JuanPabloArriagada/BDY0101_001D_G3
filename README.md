@@ -192,3 +192,17 @@ con datos idénticos también se considera actualizado correctamente.
 - `400`: ID inválido o rechazo del esquema de MongoDB (código `121`).
 - `404`: evento no encontrado.
 - `422`: datos incompletos o tipos incorrectos para el modelo.
+
+## Desactivar eventos (Soft Delete)
+
+`DELETE /api/v1/eventos/{id}` realiza una eliminación lógica: usa `update_one()`
+con `$set` para establecer `activo: false`, sin borrar el documento ni cambiar
+`estado` u otros datos del evento. Tampoco modifica órdenes, reseñas ni usuarios,
+por lo que se conservan el historial y las referencias existentes.
+
+- `200`: `{"mensaje": "Evento desactivado correctamente"}`, incluso si ya estaba
+  desactivado. Se comprueba su existencia mediante `matched_count`.
+- `400`: `ID de evento no válido.`
+- `404`: `Evento no encontrado.`
+
+Los GET actuales siguen mostrando los eventos desactivados, sin filtros nuevos.

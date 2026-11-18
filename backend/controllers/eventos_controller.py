@@ -7,6 +7,7 @@ from backend.services.eventos_service import (
     buscar_evento_por_id,
     agregar_evento,
     modificar_evento,
+    desactivar_evento,
 )
 
 router = APIRouter(prefix="/api/v1/eventos", tags=["Eventos"])
@@ -61,3 +62,16 @@ def actualizar_evento(id: str, evento: Evento):
         raise HTTPException(status_code=404, detail="Evento no encontrado.")
 
     return {"mensaje": "Evento actualizado correctamente"}
+
+
+@router.delete("/{id}")
+def eliminar_evento(id: str):
+    try:
+        encontrado = desactivar_evento(id)
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="ID de evento no válido.") from None
+
+    if not encontrado:
+        raise HTTPException(status_code=404, detail="Evento no encontrado.")
+
+    return {"mensaje": "Evento desactivado correctamente"}

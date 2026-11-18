@@ -25,3 +25,11 @@ def modificar_evento(id: str, evento: Evento):
         {"$set": evento.model_dump()},
     )
     return resultado.matched_count > 0
+
+
+def desactivar_evento(id: str):
+    resultado = get_database().eventos.update_one(
+        {"_id": ObjectId(id)},
+        {"$set": {"activo": False}},
+    )
+    return resultado.matched_count > 0
