@@ -140,3 +140,18 @@ python -c "from backend.database import ping_database, close_connection; print(p
 
 La verificación real de Atlas y sus cuatro colecciones sigue pendiente por un
 rechazo de autenticación (código `8000`). No se modificaron credenciales ni datos.
+
+## Iniciar la API
+
+Con el entorno virtual activado, ejecuta desde la raíz del repositorio:
+
+```bash
+uvicorn backend.main:app --reload
+```
+
+- API: [http://localhost:8000](http://localhost:8000).
+- Swagger: [http://localhost:8000/docs](http://localhost:8000/docs).
+
+`backend/main.py` crea la aplicación FastAPI, registra los cinco routers y define
+`GET /` para comprobar que la API funciona. Los controladores todavía no tienen
+operaciones propias, por lo que aún no aparecerán como operaciones en Swagger.
