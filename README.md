@@ -111,17 +111,21 @@ sobre MongoDB.
 
 ## Conexión a MongoDB Atlas
 
-`backend/database.py` carga estas variables del `.env` con `pydantic-settings`
-y comparte un único cliente de PyMongo entre los servicios:
+La configuración local se guarda en el `.env` de la raíz:
 
 ```ini
 MONGO_URI=
 MONGO_DB_NAME=eventify_db
+API_BASE_URL=http://localhost:8000
 ```
 
+`backend/database.py` lee las variables de MongoDB con `pydantic-settings` y
+comparte un único cliente de PyMongo entre los servicios. `API_BASE_URL` indica
+la dirección del backend para el frontend.
+
 Cada integrante o la profesora debe completar `MONGO_URI` con su propia URI de
-Atlas, que incluye las credenciales. `MONGO_USER` y `MONGO_PASSWORD` no se usan
-por separado. El usuario necesita permisos de lectura y su IP debe estar
+Atlas, que incluye las credenciales. Para las operaciones CRUD, el usuario de
+MongoDB necesita permisos `readWrite` sobre `eventify_db` y su IP debe estar
 permitida en Atlas. No publiques el `.env`.
 
 `get_database()` devuelve la base, `ping_database()` comprueba la conexión y
