@@ -108,3 +108,31 @@ consultas `find()` para revisar la carga. Sus cuatro consultas de agregación so
 
 El archivo se incorpora como referencia, sin ejecutarlo ni realizar operaciones
 sobre MongoDB.
+
+## Conexión a MongoDB Atlas
+
+`backend/database.py` carga estas variables del `.env` con `pydantic-settings`
+y comparte un único cliente de PyMongo entre los servicios:
+
+```ini
+MONGO_URI=
+MONGO_DB_NAME=eventify_db
+```
+
+Cada integrante o la profesora debe completar `MONGO_URI` con su propia URI de
+Atlas, que incluye las credenciales. `MONGO_USER` y `MONGO_PASSWORD` no se usan
+por separado. El usuario necesita permisos de lectura y su IP debe estar
+permitida en Atlas. No publiques el `.env`.
+
+`get_database()` devuelve la base, `ping_database()` comprueba la conexión y
+`close_connection()` cierra el cliente al terminar la aplicación. Los errores
+de configuración y del ping no muestran la cadena de conexión.
+
+Desde la raíz, con `.venv` activado, puedes comprobar el ping con:
+
+```bash
+python -c "from backend.database import ping_database, close_connection; print(ping_database()); close_connection()"
+```
+
+La verificación real de Atlas y sus cuatro colecciones sigue pendiente por un
+rechazo de autenticación (código `8000`). No se modificaron credenciales ni datos.
