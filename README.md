@@ -229,3 +229,25 @@ esquema MongoDB (código `121`) devuelve `400`. Las reglas de nombre, correo y r
 
 El soft delete conserva los demás datos del usuario, sus órdenes y sus reseñas.
 Los documentos recuperados se serializan para devolver ObjectId y fechas en JSON.
+
+## Compras por usuario y ciudad
+
+`GET /api/v1/analytics/compras-por-usuario-ciudad` recibe los parámetros de
+consulta obligatorios `email` y `ciudad`. Reutiliza la Consulta 1 de la Evaluación 2:
+relaciona `ordenes_compra` con `usuarios` y `eventos`, y considera únicamente
+órdenes con estado `confirmada` que coincidan con el correo y la ciudad del recinto.
+
+Devuelve una lista con `usuario`, `ciudad`, `compras` y `gasto_total`. Cada compra
+incluye `evento`, `tipo_ticket`, `cantidad`, `precio_unitario` y `subtotal`.
+El gasto total es la suma de los subtotales de los ítems, como en el pipeline original.
+
+En [Swagger](http://localhost:8000/docs), abre **Analítica**, selecciona este GET
+y pulsa **Try it out**. Introduce `usuario1@eventify.cl` en `email` y `Santiago`
+en `ciudad`, y pulsa **Execute**. La solicitud equivalente es:
+
+```text
+/api/v1/analytics/compras-por-usuario-ciudad?email=usuario1@eventify.cl&ciudad=Santiago
+```
+
+Responde HTTP `200` con los resultados o con `[]` si no hay coincidencias.
+Si falta alguno de los parámetros, FastAPI responde automáticamente HTTP `422`.
