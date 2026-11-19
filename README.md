@@ -138,8 +138,9 @@ Desde la raíz, con `.venv` activado, puedes comprobar el ping con:
 python -c "from backend.database import ping_database, close_connection; print(ping_database()); close_connection()"
 ```
 
-La verificación real de Atlas y sus cuatro colecciones sigue pendiente por un
-rechazo de autenticación (código `8000`). No se modificaron credenciales ni datos.
+Una verificación anterior recibió un rechazo de autenticación (código `8000`).
+El 19-11-2026 se comprobó correctamente el ping y la lectura de la Consulta 3
+desde la API y Streamlit. No se modificaron credenciales ni datos.
 
 ## Iniciar la API
 
@@ -378,12 +379,13 @@ El menú lateral **Navegación** permite cambiar entre cuatro secciones dentro d
 la misma aplicación. **Inicio** es la opción predeterminada.
 
 - **Inicio:** conserva la presentación del proyecto y el botón **Comprobar conexión**.
-- **Dashboard:** estructura para los indicadores y gráficos que se incorporarán posteriormente.
-- **Analítica:** presenta los nombres de las cuatro consultas de la Evaluación 2; sus visualizaciones se incorporarán posteriormente.
+- **Dashboard:** muestra los tres indicadores de negocio obtenidos desde FastAPI.
+- **Analítica:** incluye las visualizaciones de las Consultas 1, 2 y 3 de la Evaluación 2; clientes frecuentes continúa pendiente.
 - **Administración:** estructura para la futura gestión de usuarios y eventos.
 
-Las tres secciones nuevas son informativas. Navegar entre ellas no realiza
-solicitudes a la API. Solo **Comprobar conexión**, en Inicio, consulta `GET /`.
+Administración continúa siendo informativa. Dashboard consulta sus KPIs al
+mostrarse; los reportes de Analítica se consultan solo al pulsar su botón o
+enviar su formulario. **Comprobar conexión**, en Inicio, consulta `GET /`.
 
 Con `.venv` activado, inicia la aplicación desde la raíz con:
 
@@ -412,7 +414,7 @@ MongoDB y FastAPI.
 Los ceros recibidos correctamente se muestran normalmente. Si la consulta
 falla, aparece el mensaje del cliente HTTP y no se muestran tarjetas con
 valores de ejemplo. Inicio conserva su comprobación de conexión; Analítica
-y Administración continúan siendo informativas.
+incluye sus reportes y Administración continúa siendo informativa.
 
 Con `.venv` activado en ambas terminales y desde la raíz del proyecto:
 
@@ -455,7 +457,7 @@ la métrica `gasto_total` y utiliza la misma respuesta HTTP que la tabla.
 
 Si no hay coincidencias, aparece un mensaje informativo. Si la consulta falla,
 se conserva el error del cliente HTTP y no se muestran resultados inventados.
-Las Consultas 2, 3 y 4 continúan como referencias informativas.
+La visualización de clientes frecuentes (Consulta 4) continúa pendiente.
 
 Con FastAPI y Streamlit iniciados en terminales separadas, según las
 instrucciones anteriores, abre [http://localhost:8501](http://localhost:8501),
@@ -491,15 +493,54 @@ Se conservan los eventos sin ventas y con stock inicial cero.
 
 Si la respuesta es `[]`, aparece un aviso de ausencia de eventos. Si falla la
 solicitud, se conserva el error del cliente HTTP y no se muestran datos de
-ejemplo. Las Consultas 3 y 4 continúan pendientes.
+ejemplo. Solo la visualización de clientes frecuentes (Consulta 4) continúa pendiente.
 
 Con FastAPI y Streamlit iniciados en terminales separadas según las
 instrucciones anteriores, abre [http://localhost:8501](http://localhost:8501),
 selecciona **Analítica** y pulsa **Consultar ventas por evento** para ver la
 tabla completa y los dos gráficos.
 
-**Verificación de integración (19-11-2026):** el ping de solo lectura a Atlas,
-limitado a ocho segundos, devolvió `ServerSelectionTimeoutError`. La comparación
-con datos reales queda pendiente. Se verificaron la tabla, ambos gráficos y la
-navegación con respuestas HTTP simuladas, sin guardar los datos de prueba ni
-modificar credenciales, configuración o documentos de MongoDB.
+**Verificación anterior (19-11-2026):** el ping de solo lectura a Atlas,
+limitado a ocho segundos, devolvió `ServerSelectionTimeoutError`. En esa prueba
+se verificaron la tabla, ambos gráficos y la navegación con respuestas HTTP
+simuladas. Posteriormente, durante la verificación de Consulta 3, Consulta 2
+funcionó con datos reales en la API y el navegador, sin modificar documentos.
+
+## Consulta 3 en Analítica: eventos futuros con disponibilidad
+
+Después de Consulta 2, el formulario **Eventos futuros con disponibilidad**
+consulta `GET /api/v1/analytics/eventos-futuros` mediante `ciudad` y
+`precio_maximo`. Sus valores iniciales son `Santiago` y `25000` CLP.
+
+La solicitud se realiza únicamente al pulsar **Buscar eventos disponibles**.
+La ciudad se recorta con `.strip()` y debe estar informada; el precio máximo
+debe ser positivo. El backend busca entradas con precio estrictamente menor
+que ese máximo, además de aplicar sus filtros de fecha futura, estado y stock.
+Streamlit no repite estos filtros ni filtra por actividad.
+
+Cada fila de la tabla representa un tipo de entrada y conserva **Evento**,
+**Fecha del evento**, **Ciudad**, **Tipo de entrada**, **Precio** y **Stock
+disponible**. Los precios se presentan como pesos chilenos sin decimales.
+En las fechas solo se sustituye la primera `T` por un espacio para facilitar
+la lectura: se conservan segundos, fracciones y la información de zona horaria
+recibida, sin conversiones. El formato se aplica a una copia de presentación.
+
+El gráfico horizontal **Stock disponible por evento y tipo de entrada** muestra
+una barra por registro, utilizando directamente `stock_disponible`. No agrupa,
+elimina duplicados ni limita la cantidad de resultados. Las etiquetas incluyen
+evento y tipo de entrada; cuando se repiten se añade la fecha y, si es necesario,
+la posición original únicamente para distinguir las barras.
+
+Si la respuesta es `[]`, aparece un aviso de ausencia de coincidencias. Si falla
+la solicitud, se conserva el error del cliente HTTP sin inventar resultados.
+Solo queda pendiente la visualización de clientes frecuentes (Consulta 4).
+
+Con FastAPI y Streamlit iniciados en terminales separadas según las instrucciones
+anteriores, abre [http://localhost:8501](http://localhost:8501), selecciona
+**Analítica**, introduce los filtros y pulsa **Buscar eventos disponibles**.
+
+**Verificación real (19-11-2026):** con `Santiago` y `25000`, Atlas devolvió
+seis registros. La tabla mostró las seis filas y el gráfico seis barras, con
+precio de $15.000 y stock de 40 en cada registro, coincidiendo con la respuesta
+de FastAPI. También se comprobaron las Consultas 1 y 2 y las tres tarjetas de
+KPIs. Las operaciones fueron exclusivamente de lectura.

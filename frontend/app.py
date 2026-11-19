@@ -159,11 +159,62 @@ elif seccion == "Analítica":
                     figura_ventas.update_yaxes(autorange="reversed")
                     st.plotly_chart(figura_ventas)
 
-    st.write(
-        "- Eventos futuros con filtros.\n"
-        "- Clientes frecuentes."
-    )
-    st.info("Las visualizaciones de las Consultas 3 y 4 se incorporarán posteriormente.")
+    st.divider()
+    st.subheader("Eventos futuros con disponibilidad")
+    st.caption("Entradas disponibles de eventos futuros, filtradas por ciudad y precio máximo.")
+
+    with st.form("consulta_eventos_futuros"):
+        ciudad_futura = st.text_input("Ciudad", value="Santiago")
+        precio_maximo = st.number_input("Precio máximo (CLP)", min_value=1, value=25000, step=1000)
+        st.caption("Se buscan entradas con precio estrictamente menor al máximo ingresado.")
+        buscar_disponibles = st.form_submit_button("Buscar eventos disponibles")
+
+    if buscar_disponibles:
+        ciudad_futura = ciudad_futura.strip()
+        if not ciudad_futura or precio_maximo <= 0:
+            st.warning("Ingresa una ciudad y un precio máximo mayor que cero.")
+        else:
+            datos_disponibles = consultar_api(
+                "/api/v1/analytics/eventos-futuros",
+                params={"ciudad": ciudad_futura, "precio_maximo": precio_maximo},
+            )
+            if datos_disponibles is not None:
+                if not datos_disponibles:
+                    st.info("No se encontraron eventos futuros con entradas disponibles para los filtros seleccionados.")
+                else:
+                    disponibilidad = pd.DataFrame(datos_disponibles)
+                    tabla_disponibilidad = disponibilidad.copy()
+                    fechas_visibles = disponibilidad["fecha_evento"].str.replace("T", " ", n=1, regex=False)
+                    tabla_disponibilidad["fecha_evento"] = fechas_visibles
+                    tabla_disponibilidad["precio"] = tabla_disponibilidad["precio"].map("${:,.0f}".format).str.replace(",", ".", regex=False)
+                    tabla_disponibilidad = tabla_disponibilidad.rename(columns={
+                        "evento": "Evento",
+                        "fecha_evento": "Fecha del evento",
+                        "ciudad": "Ciudad",
+                        "tipo_ticket": "Tipo de entrada",
+                        "precio": "Precio",
+                        "stock_disponible": "Stock disponible",
+                    })
+                    st.dataframe(tabla_disponibilidad, hide_index=True)
+
+                    grafico_disponibilidad = disponibilidad.copy()
+                    grafico_disponibilidad["entrada_visual"] = disponibilidad["evento"] + " — " + disponibilidad["tipo_ticket"]
+                    repetidas = grafico_disponibilidad["entrada_visual"].duplicated(keep=False)
+                    grafico_disponibilidad.loc[repetidas, "entrada_visual"] += " — " + fechas_visibles.loc[repetidas]
+                    if grafico_disponibilidad["entrada_visual"].duplicated().any():
+                        grafico_disponibilidad["entrada_visual"] += " [" + (grafico_disponibilidad.index + 1).astype(str) + "]"
+                    figura_disponibilidad = px.bar(
+                        grafico_disponibilidad,
+                        x="stock_disponible",
+                        y="entrada_visual",
+                        orientation="h",
+                        title="Stock disponible por evento y tipo de entrada",
+                        labels={"stock_disponible": "Stock disponible", "entrada_visual": "Evento y tipo de entrada"},
+                    )
+                    figura_disponibilidad.update_yaxes(autorange="reversed")
+                    st.plotly_chart(figura_disponibilidad)
+
+    st.info("Solo queda pendiente la visualización de clientes frecuentes (Consulta 4).")
 else:
     st.title("Administración")
     st.caption("Gestión de usuarios y eventos de Eventify Global.")
