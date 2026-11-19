@@ -393,3 +393,38 @@ streamlit run frontend/app.py
 
 Para comprobar la conexión, mantén FastAPI ejecutándose en otra terminal con
 el comando indicado en la sección anterior.
+
+## Tarjetas de KPIs en Dashboard
+
+La sección **Dashboard** muestra tres tarjetas en columnas. Cada ejecución de
+esta sección realiza una única consulta HTTP a `GET /api/v1/kpis` mediante
+`consultar_api()` y utiliza los valores actuales devueltos por FastAPI.
+
+- **Recaudación total:** suma del total de las órdenes confirmadas.
+- **Gasto promedio por orden:** importe promedio de esas órdenes confirmadas.
+- **Calificación promedio:** puntuación promedio general de las reseñas.
+
+Los importes se muestran como pesos chilenos, sin decimales y con puntos como
+separadores de miles. La calificación utiliza dos decimales, coma decimal y
+escala `/ 5`. El frontend solo aplica formato visual; los cálculos siguen en
+MongoDB y FastAPI.
+
+Los ceros recibidos correctamente se muestran normalmente. Si la consulta
+falla, aparece el mensaje del cliente HTTP y no se muestran tarjetas con
+valores de ejemplo. Inicio conserva su comprobación de conexión; Analítica
+y Administración continúan siendo informativas.
+
+Con `.venv` activado en ambas terminales y desde la raíz del proyecto:
+
+```powershell
+# Terminal 1
+uvicorn backend.main:app --reload
+```
+
+```powershell
+# Terminal 2
+streamlit run frontend/app.py
+```
+
+Abre [http://localhost:8501](http://localhost:8501) y selecciona **Dashboard**
+en el menú lateral para ver los tres indicadores.

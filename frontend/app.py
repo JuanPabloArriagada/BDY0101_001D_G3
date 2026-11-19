@@ -44,8 +44,19 @@ if seccion == "Inicio":
             st.write(datos["mensaje"])
 elif seccion == "Dashboard":
     st.title("Dashboard")
-    st.caption("Indicadores y gráficos de Eventify Global.")
-    st.info("Las visualizaciones se incorporarán en las siguientes tareas.")
+    st.caption("Indicadores de negocio de Eventify Global")
+    datos = consultar_api("/api/v1/kpis")
+    if datos is not None:
+        col1, col2, col3 = st.columns(3)
+        col1.metric(
+            "Recaudación total", f"${datos['recaudacion_total']:,.0f}".replace(",", ".")
+        )
+        col2.metric(
+            "Gasto promedio por orden", f"${datos['gasto_promedio_orden']:,.0f}".replace(",", ".")
+        )
+        col3.metric(
+            "Calificación promedio", f"{datos['calificacion_promedio']:.2f} / 5".replace(".", ",")
+        )
 elif seccion == "Analítica":
     st.title("Analítica")
     st.caption("Reportes disponibles en el backend de Eventify Global.")
