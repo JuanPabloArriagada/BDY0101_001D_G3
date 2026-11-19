@@ -380,7 +380,7 @@ la misma aplicación. **Inicio** es la opción predeterminada.
 
 - **Inicio:** conserva la presentación del proyecto y el botón **Comprobar conexión**.
 - **Dashboard:** muestra los tres indicadores de negocio obtenidos desde FastAPI.
-- **Analítica:** incluye las visualizaciones de las Consultas 1, 2 y 3 de la Evaluación 2; clientes frecuentes continúa pendiente.
+- **Analítica:** incluye las visualizaciones de las cuatro consultas originales de la Evaluación 2.
 - **Administración:** estructura para la futura gestión de usuarios y eventos.
 
 Administración continúa siendo informativa. Dashboard consulta sus KPIs al
@@ -457,7 +457,7 @@ la métrica `gasto_total` y utiliza la misma respuesta HTTP que la tabla.
 
 Si no hay coincidencias, aparece un mensaje informativo. Si la consulta falla,
 se conserva el error del cliente HTTP y no se muestran resultados inventados.
-La visualización de clientes frecuentes (Consulta 4) continúa pendiente.
+Las cuatro consultas originales están disponibles en Analítica.
 
 Con FastAPI y Streamlit iniciados en terminales separadas, según las
 instrucciones anteriores, abre [http://localhost:8501](http://localhost:8501),
@@ -493,7 +493,7 @@ Se conservan los eventos sin ventas y con stock inicial cero.
 
 Si la respuesta es `[]`, aparece un aviso de ausencia de eventos. Si falla la
 solicitud, se conserva el error del cliente HTTP y no se muestran datos de
-ejemplo. Solo la visualización de clientes frecuentes (Consulta 4) continúa pendiente.
+ejemplo. Las cuatro consultas originales están disponibles en Analítica.
 
 Con FastAPI y Streamlit iniciados en terminales separadas según las
 instrucciones anteriores, abre [http://localhost:8501](http://localhost:8501),
@@ -533,7 +533,7 @@ la posición original únicamente para distinguir las barras.
 
 Si la respuesta es `[]`, aparece un aviso de ausencia de coincidencias. Si falla
 la solicitud, se conserva el error del cliente HTTP sin inventar resultados.
-Solo queda pendiente la visualización de clientes frecuentes (Consulta 4).
+Las cuatro consultas originales están disponibles en Analítica.
 
 Con FastAPI y Streamlit iniciados en terminales separadas según las instrucciones
 anteriores, abre [http://localhost:8501](http://localhost:8501), selecciona
@@ -544,3 +544,46 @@ seis registros. La tabla mostró las seis filas y el gráfico seis barras, con
 precio de $15.000 y stock de 40 en cada registro, coincidiendo con la respuesta
 de FastAPI. También se comprobaron las Consultas 1 y 2 y las tres tarjetas de
 KPIs. Las operaciones fueron exclusivamente de lectura.
+
+## Consulta 4 en Analítica: clientes frecuentes
+
+Después de Consulta 3, **Clientes frecuentes** consulta
+`GET /api/v1/analytics/clientes-frecuentes` únicamente al pulsar
+**Consultar clientes frecuentes**, sin parámetros. La misma respuesta se
+utiliza para la tabla y ambos gráficos.
+
+Un cliente frecuente tiene al menos dos órdenes de compra confirmadas.
+MongoDB cuenta esas órdenes mediante `$size` y suma su campo `total` para
+obtener el gasto; la cantidad de compras no representa entradas individuales.
+Streamlit no repite estos cálculos ni excluye clientes inactivos.
+
+La tabla conserva todos los registros recibidos y muestra **Nombre**,
+**Correo electrónico**, **Cantidad de compras**, **Total gastado** y **Tipo
+de cliente**. Una copia permite presentar el gasto como pesos chilenos, sin
+decimales y con puntos como separadores de miles, manteniendo los valores
+numéricos originales para los gráficos. La clasificación se muestra exactamente
+como la entrega FastAPI, sin recalcularla.
+
+- **Top 10 clientes por gasto total:** barras horizontales con `total_gastado`.
+- **Top 10 clientes por cantidad de compras:** barras horizontales con `cantidad_compras`.
+
+Cada gráfico ordena su indicador de mayor a menor, con el valor más alto arriba,
+y muestra hasta diez clientes para facilitar la lectura. La tabla permanece
+completa. Las etiquetas incluyen nombre y correo; si se repiten, se añade su
+posición original. Se reutilizan en ambos gráficos sin fusionar registros.
+
+Si la respuesta es `[]`, aparece un mensaje de ausencia de clientes con al menos
+dos órdenes confirmadas. Si falla la solicitud, se conserva el error del cliente
+HTTP y no se muestran tablas ni gráficos con datos inventados.
+
+Con FastAPI y Streamlit iniciados en terminales separadas según las instrucciones
+anteriores, abre [http://localhost:8501](http://localhost:8501), selecciona
+**Analítica** y pulsa **Consultar clientes frecuentes** para ver la tabla y
+los dos gráficos. Las cuatro visualizaciones originales están disponibles.
+
+**Verificación real (19-11-2026):** FastAPI devolvió cinco clientes, cada uno
+con dos órdenes confirmadas, $150.000 gastados y clasificación `Frecuente`.
+La tabla conservó las cinco filas y cada gráfico mostró cinco barras con los
+mismos valores de la API. También se comprobaron las Consultas 1, 2 y 3 y los
+tres KPIs en Streamlit. Todas las operaciones fueron de lectura, sin modificar
+documentos, credenciales ni configuración.

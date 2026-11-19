@@ -214,7 +214,51 @@ elif seccion == "Analítica":
                     figura_disponibilidad.update_yaxes(autorange="reversed")
                     st.plotly_chart(figura_disponibilidad)
 
-    st.info("Solo queda pendiente la visualización de clientes frecuentes (Consulta 4).")
+    st.divider()
+    st.subheader("Clientes frecuentes")
+    st.caption("Clientes con al menos dos órdenes de compra confirmadas.")
+    st.caption("La cantidad de compras representa órdenes confirmadas, no entradas individuales.")
+
+    if st.button("Consultar clientes frecuentes"):
+        datos_clientes = consultar_api("/api/v1/analytics/clientes-frecuentes")
+        if datos_clientes is not None:
+            if not datos_clientes:
+                st.info("No se encontraron clientes con al menos dos órdenes de compra confirmadas.")
+            else:
+                clientes = pd.DataFrame(datos_clientes)
+                tabla_clientes = clientes.copy()
+                tabla_clientes["total_gastado"] = tabla_clientes["total_gastado"].map("${:,.0f}".format).str.replace(",", ".", regex=False)
+                tabla_clientes = tabla_clientes.rename(columns={
+                    "nombre": "Nombre",
+                    "email": "Correo electrónico",
+                    "cantidad_compras": "Cantidad de compras",
+                    "total_gastado": "Total gastado",
+                    "tipo_cliente": "Tipo de cliente",
+                })
+                st.dataframe(tabla_clientes, hide_index=True)
+
+                graficos_clientes = clientes.copy()
+                graficos_clientes["cliente_visual"] = clientes["nombre"] + " — " + clientes["email"]
+                repetidos = graficos_clientes["cliente_visual"].duplicated(keep=False)
+                graficos_clientes.loc[repetidos, "cliente_visual"] += " [" + (graficos_clientes.index[repetidos] + 1).astype(str) + "]"
+
+                for campo, titulo, eje in (
+                    ("total_gastado", "Top 10 clientes por gasto total", "Total gastado (CLP)"),
+                    ("cantidad_compras", "Top 10 clientes por cantidad de compras", "Cantidad de compras"),
+                ):
+                    top_clientes = graficos_clientes.sort_values(campo, ascending=False).head(10)
+                    figura_clientes = px.bar(
+                        top_clientes,
+                        x=campo,
+                        y="cliente_visual",
+                        orientation="h",
+                        title=titulo,
+                        labels={campo: eje, "cliente_visual": "Cliente y correo electrónico"},
+                    )
+                    figura_clientes.update_yaxes(autorange="reversed")
+                    st.plotly_chart(figura_clientes)
+
+    st.info("Las cuatro consultas originales de la Evaluación 2 están disponibles.")
 else:
     st.title("Administración")
     st.caption("Gestión de usuarios y eventos de Eventify Global.")
