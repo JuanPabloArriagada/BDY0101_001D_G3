@@ -342,3 +342,32 @@ Ejemplo ilustrativo de respuesta, con valores ficticios:
 
 En [Swagger](http://localhost:8000/docs), abre **KPIs**, selecciona
 `GET /api/v1/kpis` y pulsa **Try it out** y **Execute** para consultar los valores.
+
+## Iniciar Streamlit y comprobar la conexión
+
+Con `.venv` activado en ambas terminales, ejecuta desde la raíz del repositorio:
+
+**Terminal 1 — FastAPI:**
+
+```powershell
+uvicorn backend.main:app --reload
+```
+
+**Terminal 2 — Streamlit:**
+
+```powershell
+streamlit run frontend/app.py
+```
+
+Abre [http://localhost:8501](http://localhost:8501) y pulsa **Comprobar conexión**.
+El frontend consulta únicamente `GET /` y muestra la confirmación y el mensaje
+devuelto por FastAPI.
+
+`API_BASE_URL` indica la dirección del backend. Se carga desde el `.env` de la
+raíz y utiliza `http://localhost:8000` como valor predeterminado si no está
+definida. Streamlit se comunica por HTTP, sin acceder directamente a MongoDB.
+
+Si FastAPI no está disponible, tarda más de cinco segundos o devuelve un error,
+la pantalla muestra un aviso y sigue funcionando. Después de iniciar o revisar
+la API, puedes volver a pulsar el botón. Esta pantalla inicial todavía no
+incluye visualizaciones ni formularios administrativos.
