@@ -461,3 +461,45 @@ Con FastAPI y Streamlit iniciados en terminales separadas, según las
 instrucciones anteriores, abre [http://localhost:8501](http://localhost:8501),
 selecciona **Analítica**, completa los filtros y pulsa **Consultar compras**
 para ver la métrica, la tabla y el gráfico.
+
+## Consulta 2 en Analítica: ventas y ocupación por evento
+
+Después de Consulta 1, la sección **Ventas y ocupación por evento** consulta
+`GET /api/v1/analytics/reporte-ventas-eventos` únicamente al pulsar
+**Consultar ventas por evento**, sin parámetros. La misma respuesta se utiliza
+para la tabla y ambos gráficos.
+
+La tabla conserva todos los registros y muestra **Evento**, **Ciudad**,
+**Stock inicial**, **Total recaudado**, **Tickets vendidos**, **Porcentaje
+vendido** y **Clasificación**. Los importes se presentan como pesos chilenos
+y los porcentajes con dos decimales y coma decimal. Solo una copia de
+presentación recibe este formato; los gráficos mantienen los valores numéricos.
+
+- **Top 10 eventos por recaudación:** barras horizontales con `total_recaudado`.
+- **Top 10 eventos por porcentaje vendido:** barras horizontales con `porcentaje_venta`.
+
+Cada gráfico ordena de mayor a menor y muestra hasta diez registros para
+facilitar su lectura; la tabla permanece completa. Los nombres incluyen la
+ciudad y, si todavía coinciden, su posición original únicamente en los gráficos.
+No se fusionan eventos ni se eliminan duplicados.
+
+El porcentaje representa entradas vendidas respecto del stock inicial,
+no asistencia real. Se conserva incluso si supera el 100 %. La clasificación
+se muestra como la entrega FastAPI: **Exitoso** desde el 70 % y **Por Mejorar**
+por debajo. Estos cálculos se realizan en MongoDB; Streamlit no los recalcula.
+Se conservan los eventos sin ventas y con stock inicial cero.
+
+Si la respuesta es `[]`, aparece un aviso de ausencia de eventos. Si falla la
+solicitud, se conserva el error del cliente HTTP y no se muestran datos de
+ejemplo. Las Consultas 3 y 4 continúan pendientes.
+
+Con FastAPI y Streamlit iniciados en terminales separadas según las
+instrucciones anteriores, abre [http://localhost:8501](http://localhost:8501),
+selecciona **Analítica** y pulsa **Consultar ventas por evento** para ver la
+tabla completa y los dos gráficos.
+
+**Verificación de integración (19-11-2026):** el ping de solo lectura a Atlas,
+limitado a ocho segundos, devolvió `ServerSelectionTimeoutError`. La comparación
+con datos reales queda pendiente. Se verificaron la tabla, ambos gráficos y la
+navegación con respuestas HTTP simuladas, sin guardar los datos de prueba ni
+modificar credenciales, configuración o documentos de MongoDB.

@@ -112,12 +112,58 @@ elif seccion == "Analítica":
                     )
                     st.plotly_chart(figura)
 
+    st.divider()
+    st.subheader("Ventas y ocupación por evento")
+    st.caption("Reporte de recaudación y porcentaje de entradas vendidas por evento.")
+    st.caption("El porcentaje compara entradas vendidas con el stock inicial; no representa asistencia real.")
+
+    if st.button("Consultar ventas por evento"):
+        datos_ventas = consultar_api("/api/v1/analytics/reporte-ventas-eventos")
+        if datos_ventas is not None:
+            if not datos_ventas:
+                st.info("No se encontraron eventos para generar el reporte de ventas.")
+            else:
+                ventas = pd.DataFrame(datos_ventas)
+                tabla_ventas = ventas.copy()
+                tabla_ventas["total_recaudado"] = tabla_ventas["total_recaudado"].map("${:,.0f}".format).str.replace(",", ".", regex=False)
+                tabla_ventas["porcentaje_venta"] = tabla_ventas["porcentaje_venta"].map("{:.2f} %".format).str.replace(".", ",", regex=False)
+                tabla_ventas = tabla_ventas.rename(columns={
+                    "evento": "Evento",
+                    "ciudad": "Ciudad",
+                    "stock_inicial": "Stock inicial",
+                    "total_recaudado": "Total recaudado",
+                    "tickets_vendidos": "Tickets vendidos",
+                    "porcentaje_venta": "Porcentaje vendido",
+                    "etiqueta": "Clasificación",
+                })
+                st.dataframe(tabla_ventas, hide_index=True)
+
+                graficos_ventas = ventas.copy()
+                graficos_ventas["evento_visual"] = graficos_ventas["evento"] + " — " + graficos_ventas["ciudad"]
+                repetidos = graficos_ventas["evento_visual"].duplicated(keep=False)
+                graficos_ventas.loc[repetidos, "evento_visual"] += " [" + (graficos_ventas.index[repetidos] + 1).astype(str) + "]"
+
+                for campo, titulo, eje in (
+                    ("total_recaudado", "Top 10 eventos por recaudación", "Recaudación (CLP)"),
+                    ("porcentaje_venta", "Top 10 eventos por porcentaje vendido", "Porcentaje vendido (%)"),
+                ):
+                    top_eventos = graficos_ventas.sort_values(campo, ascending=False).head(10)
+                    figura_ventas = px.bar(
+                        top_eventos,
+                        x=campo,
+                        y="evento_visual",
+                        orientation="h",
+                        title=titulo,
+                        labels={campo: eje, "evento_visual": "Evento y ciudad"},
+                    )
+                    figura_ventas.update_yaxes(autorange="reversed")
+                    st.plotly_chart(figura_ventas)
+
     st.write(
-        "- Reporte de ventas por evento.\n"
         "- Eventos futuros con filtros.\n"
         "- Clientes frecuentes."
     )
-    st.info("Las visualizaciones de estas tres consultas se incorporarán posteriormente.")
+    st.info("Las visualizaciones de las Consultas 3 y 4 se incorporarán posteriormente.")
 else:
     st.title("Administración")
     st.caption("Gestión de usuarios y eventos de Eventify Global.")
