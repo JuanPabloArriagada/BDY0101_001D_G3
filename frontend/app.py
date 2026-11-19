@@ -28,12 +28,35 @@ def consultar_api(endpoint: str, params: dict = None):
     return None
 
 
-st.title("Eventify Global")
-st.caption("Dashboard de gestión y análisis de eventos.")
-st.subheader("Conexión con FastAPI")
+seccion = st.sidebar.radio(
+    "Navegación", ["Inicio", "Dashboard", "Analítica", "Administración"]
+)
 
-if st.button("Comprobar conexión"):
-    datos = consultar_api("/")
-    if datos is not None:
-        st.success("Conexión con FastAPI establecida.")
-        st.write(datos["mensaje"])
+if seccion == "Inicio":
+    st.title("Eventify Global")
+    st.caption("Dashboard de gestión y análisis de eventos.")
+    st.subheader("Conexión con FastAPI")
+
+    if st.button("Comprobar conexión"):
+        datos = consultar_api("/")
+        if datos is not None:
+            st.success("Conexión con FastAPI establecida.")
+            st.write(datos["mensaje"])
+elif seccion == "Dashboard":
+    st.title("Dashboard")
+    st.caption("Indicadores y gráficos de Eventify Global.")
+    st.info("Las visualizaciones se incorporarán en las siguientes tareas.")
+elif seccion == "Analítica":
+    st.title("Analítica")
+    st.caption("Reportes disponibles en el backend de Eventify Global.")
+    st.write(
+        "- Compras por usuario y ciudad.\n"
+        "- Reporte de ventas por evento.\n"
+        "- Eventos futuros con filtros.\n"
+        "- Clientes frecuentes."
+    )
+    st.info("Las visualizaciones de estos reportes se implementarán posteriormente.")
+else:
+    st.title("Administración")
+    st.caption("Gestión de usuarios y eventos de Eventify Global.")
+    st.info("Aquí se podrán administrar usuarios y eventos en las siguientes tareas.")

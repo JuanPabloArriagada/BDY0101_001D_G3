@@ -371,3 +371,25 @@ Si FastAPI no está disponible, tarda más de cinco segundos o devuelve un error
 la pantalla muestra un aviso y sigue funcionando. Después de iniciar o revisar
 la API, puedes volver a pulsar el botón. Esta pantalla inicial todavía no
 incluye visualizaciones ni formularios administrativos.
+
+## Navegación del dashboard
+
+El menú lateral **Navegación** permite cambiar entre cuatro secciones dentro de
+la misma aplicación. **Inicio** es la opción predeterminada.
+
+- **Inicio:** conserva la presentación del proyecto y el botón **Comprobar conexión**.
+- **Dashboard:** estructura para los indicadores y gráficos que se incorporarán posteriormente.
+- **Analítica:** presenta los nombres de las cuatro consultas de la Evaluación 2; sus visualizaciones se incorporarán posteriormente.
+- **Administración:** estructura para la futura gestión de usuarios y eventos.
+
+Las tres secciones nuevas son informativas. Navegar entre ellas no realiza
+solicitudes a la API. Solo **Comprobar conexión**, en Inicio, consulta `GET /`.
+
+Con `.venv` activado, inicia la aplicación desde la raíz con:
+
+```powershell
+streamlit run frontend/app.py
+```
+
+Para comprobar la conexión, mantén FastAPI ejecutándose en otra terminal con
+el comando indicado en la sección anterior.
