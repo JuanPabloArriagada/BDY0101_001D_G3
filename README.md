@@ -381,9 +381,9 @@ la misma aplicación. **Inicio** es la opción predeterminada.
 - **Inicio:** conserva la presentación del proyecto y el botón **Comprobar conexión**.
 - **Dashboard:** muestra los tres indicadores de negocio obtenidos desde FastAPI.
 - **Analítica:** incluye las visualizaciones de las cuatro consultas originales de la Evaluación 2.
-- **Administración:** estructura para la futura gestión de usuarios y eventos.
+- **Administración:** panel para listar, crear, editar y desactivar usuarios y eventos.
 
-Administración continúa siendo informativa. Dashboard consulta sus KPIs al
+Administración utiliza los CRUD existentes de FastAPI. Dashboard consulta sus KPIs al
 mostrarse; los reportes de Analítica se consultan solo al pulsar su botón o
 enviar su formulario. **Comprobar conexión**, en Inicio, consulta `GET /`.
 
@@ -414,7 +414,7 @@ MongoDB y FastAPI.
 Los ceros recibidos correctamente se muestran normalmente. Si la consulta
 falla, aparece el mensaje del cliente HTTP y no se muestran tarjetas con
 valores de ejemplo. Inicio conserva su comprobación de conexión; Analítica
-incluye sus reportes y Administración continúa siendo informativa.
+incluye sus reportes y Administración permite gestionar usuarios y eventos.
 
 Con `.venv` activado en ambas terminales y desde la raíz del proyecto:
 
@@ -587,3 +587,81 @@ La tabla conservó las cinco filas y cada gráfico mostró cinco barras con los
 mismos valores de la API. También se comprobaron las Consultas 1, 2 y 3 y los
 tres KPIs en Streamlit. Todas las operaciones fueron de lectura, sin modificar
 documentos, credenciales ni configuración.
+
+## Panel administrativo CRUD
+
+En **Administración**, selecciona **Usuarios** o **Eventos** y una operación:
+**Listar**, **Crear**, **Editar** o **Desactivar**. Solo se muestra la operación
+elegida. El panel se comunica por HTTP con FastAPI, sin conectarse a MongoDB.
+
+| Operación | Método | Usuarios | Eventos |
+|---|---|---|---|
+| Listar | GET | `/api/v1/usuarios/` | `/api/v1/eventos/` |
+| Consultar para editar o desactivar | GET | `/api/v1/usuarios/{id}` | `/api/v1/eventos/{id}` |
+| Crear | POST | `/api/v1/usuarios/` | `/api/v1/eventos/` |
+| Editar | PUT | `/api/v1/usuarios/{id}` | `/api/v1/eventos/{id}` |
+| Desactivar | DELETE | `/api/v1/usuarios/{id}` | `/api/v1/eventos/{id}` |
+
+**Listar** muestra los IDs y los registros activos e inactivos. Pulsa
+**Actualizar listado** para obtener los datos actuales. En edición y
+desactivación, el selector muestra etiquetas legibles pero utiliza `_id`;
+después consulta el documento seleccionado para precargar sus datos.
+
+Los formularios de usuarios incluyen nombre, correo, rol (`cliente` o
+`administrador`), activo, fecha de nacimiento y fecha de registro. Las fechas
+nuevas se envían en ISO 8601 a medianoche. Al editar una fecha se conserva su
+hora y zona originales; si no cambia, se conserva la cadena original completa.
+
+Los formularios de eventos incluyen información general, fecha y hora, estado,
+activo, recinto y entradas. El recinto es un objeto con nombre, ciudad,
+dirección y capacidad. Las entradas son una lista de objetos con tipo, precio,
+stock inicial y stock disponible. El editor permite añadir filas al crear;
+al editar mantiene filas fijas para conservar General, VIP y los demás tipos.
+Se pueden modificar sus precios y stocks. Se indica la zona horaria de la fecha;
+las fechas nuevas se interpretan en UTC y las existentes no se convierten de
+zona silenciosamente. Los valores sin cambios conservan su precisión original.
+
+POST y PUT envían todos los campos del modelo, sin `_id` en el cuerpo. Solo se
+envían al confirmar el formulario. Se validan los campos obligatorios, el correo,
+las fechas, la capacidad positiva, al menos una entrada y los precios y stocks
+no negativos; los stocks deben ser enteros. MongoDB conserva sus validadores.
+
+**Desactivar** requiere marcar la confirmación y enviar el formulario del ID
+seleccionado. DELETE establece `activo: false` y conserva el documento y su
+historial. Un registro ya inactivo se informa sin enviar otro DELETE.
+
+`consultar_api()` conserva las lecturas existentes. `enviar_api()` centraliza
+POST, PUT y DELETE, con timeout de cinco segundos y sin reintentos automáticos.
+Muestra errores 400, 404, 422 y 500, fallos de conexión, timeout y respuestas
+inválidas. Los errores de lectura mantienen el mensaje genérico del cliente GET.
+Una respuesta fallida no muestra éxito. Ante un error de red o de confirmación,
+consulta el listado antes de repetir: la operación podría haberse aplicado.
+
+El último mensaje confirmado permanece visible al cambiar a **Listar** y
+actualizar la tabla. No se utiliza caché ni una recarga automática para ocultarlo.
+
+Para usar el panel, inicia desde la raíz, con `.venv` activado en dos terminales:
+
+```powershell
+# Terminal 1
+uvicorn backend.main:app --reload
+```
+
+```powershell
+# Terminal 2
+streamlit run frontend/app.py
+```
+
+Abre [http://localhost:8501](http://localhost:8501) y selecciona **Administración**.
+Listar y seleccionar registros realiza lecturas. Confirmar creación, edición o
+desactivación modifica la base configurada: revisa el registro y los datos antes
+de enviar. Las pruebas de escritura de esta tarea deben utilizar solicitudes
+simuladas o interceptadas; la integración con Atlas se limita a GET. No ejecutes
+el script original de MongoDB, porque contiene `db.dropDatabase()`.
+
+**Verificación (19-11-2026):** los GET reales devolvieron 50 usuarios y 50 eventos,
+incluidos 20 eventos inactivos. Las tablas y la precarga coincidieron con FastAPI.
+POST, PUT y DELETE se probaron con solicitudes interceptadas, incluyendo fechas
+con offsets y fracciones, varias entradas, confirmación por ID y errores HTTP y
+de red. Se comprobaron las cuatro consultas analíticas y los tres KPIs. La
+navegación real utilizó exclusivamente GET y no se ejecutaron escrituras en Atlas.

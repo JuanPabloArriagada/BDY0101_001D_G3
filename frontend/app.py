@@ -1,4 +1,6 @@
 import os
+import re
+from datetime import date, datetime, time
 from pathlib import Path
 
 import pandas as pd
@@ -27,6 +29,48 @@ def consultar_api(endpoint: str, params: dict = None):
         st.error("La API respondió con un error HTTP.")
     except requests.exceptions.RequestException:
         st.error("No se pudo conectar con FastAPI o se agotó el tiempo de espera.")
+    return None
+
+
+def enviar_api(metodo, endpoint, datos=None):
+    try:
+        respuesta = requests.request(
+            metodo, f"{API_BASE_URL}/{endpoint.lstrip('/')}", json=datos, timeout=5
+        )
+        respuesta.raise_for_status()
+        contenido = respuesta.json()
+        if not isinstance(contenido, dict) or not isinstance(contenido.get("mensaje"), str) or not contenido["mensaje"].strip():
+            st.error("La API no devolvió una confirmación válida. Comprueba el listado antes de repetir.")
+            return None
+        return contenido
+    except requests.exceptions.JSONDecodeError:
+        st.error("La API no devolvió una respuesta JSON válida. Comprueba el listado antes de repetir.")
+    except requests.exceptions.HTTPError:
+        codigo = respuesta.status_code
+        detalle = None
+        if codigo in (400, 404, 422):
+            try:
+                contenido = respuesta.json()
+                if isinstance(contenido, dict):
+                    detalle = contenido.get("detail")
+            except requests.exceptions.JSONDecodeError:
+                pass
+        if isinstance(detalle, str):
+            st.error(f"HTTP {codigo}: {detalle}")
+        elif isinstance(detalle, list):
+            mensajes = [
+                f"{'.'.join(str(campo) for campo in error.get('loc', []))}: {error.get('msg', 'Dato inválido')}"
+                for error in detalle if isinstance(error, dict)
+            ]
+            st.error(f"HTTP {codigo}: " + "; ".join(mensajes))
+        else:
+            st.error(f"La API respondió con un error HTTP {codigo}.")
+    except requests.exceptions.Timeout:
+        st.error("Se agotó el tiempo de espera. Comprueba el listado antes de repetir la operación.")
+    except requests.exceptions.ConnectionError:
+        st.error("No se pudo conectar con FastAPI. Comprueba el listado antes de repetir la operación.")
+    except requests.exceptions.RequestException:
+        st.error("No se pudo enviar la solicitud a FastAPI.")
     return None
 
 
@@ -262,4 +306,156 @@ elif seccion == "Analítica":
 else:
     st.title("Administración")
     st.caption("Gestión de usuarios y eventos de Eventify Global.")
-    st.info("Aquí se podrán administrar usuarios y eventos en las siguientes tareas.")
+    entidad = st.selectbox("Entidad", ["Usuarios", "Eventos"])
+    operacion = st.selectbox("Operación", ["Listar", "Crear", "Editar", "Desactivar"])
+    endpoint = f"/api/v1/{entidad.lower()}/"
+    registro = None
+
+    if operacion != "Crear":
+        if operacion == "Listar":
+            st.button("Actualizar listado")
+        registros = consultar_api(endpoint)
+        if registros is not None:
+            if not registros:
+                st.info("No hay registros para mostrar.")
+            elif operacion == "Listar":
+                if entidad == "Usuarios":
+                    tabla_admin = pd.DataFrame(registros)[[
+                        "_id", "nombre", "email", "rol", "activo", "fecha_nacimiento", "fecha_registro"
+                    ]].rename(columns={
+                        "_id": "ID", "nombre": "Nombre", "email": "Correo electrónico", "rol": "Rol",
+                        "activo": "Activo", "fecha_nacimiento": "Fecha de nacimiento", "fecha_registro": "Fecha de registro",
+                    })
+                else:
+                    tabla_admin = pd.json_normalize(registros)[[
+                        "_id", "nombre", "fecha_evento", "estado", "activo", "recinto.nombre", "recinto.ciudad", "recinto.capacidad"
+                    ]].rename(columns={
+                        "_id": "ID", "nombre": "Nombre", "fecha_evento": "Fecha del evento", "estado": "Estado",
+                        "activo": "Activo", "recinto.nombre": "Recinto", "recinto.ciudad": "Ciudad", "recinto.capacidad": "Capacidad",
+                    })
+                st.dataframe(tabla_admin, hide_index=True)
+            else:
+                if entidad == "Usuarios":
+                    opciones = {dato["_id"]: f"{dato['nombre']} — {dato['email']} [{dato['_id']}]" for dato in registros}
+                else:
+                    opciones = {dato["_id"]: f"{dato['nombre']} — {dato['recinto']['ciudad']} [{dato['_id']}]" for dato in registros}
+                identificador = st.selectbox("Registro", list(opciones), format_func=opciones.get, key=f"seleccion_{entidad}_{operacion}")
+                registro = consultar_api(f"{endpoint}{identificador}")
+
+    if operacion == "Desactivar" and registro is not None:
+        st.write("ID:", registro["_id"])
+        st.write("Nombre:", registro["nombre"])
+        st.caption("La desactivación conserva el documento y su historial.")
+        if not registro["activo"]:
+            st.info("Este registro ya está inactivo.")
+        else:
+            with st.form(f"desactivar_{entidad}_{registro['_id']}"):
+                confirmar = st.checkbox("Confirmo que quiero desactivar este registro")
+                desactivar = st.form_submit_button("Desactivar registro")
+            if desactivar:
+                st.session_state.pop("mensaje_admin", None)
+                if not confirmar:
+                    st.warning("Debes confirmar la desactivación del registro seleccionado.")
+                else:
+                    resultado_admin = enviar_api("DELETE", f"{endpoint}{registro['_id']}")
+                    if resultado_admin is not None:
+                        st.session_state["mensaje_admin"] = resultado_admin["mensaje"]
+
+    elif operacion == "Crear" or (operacion == "Editar" and registro is not None):
+        with st.form(f"formulario_{entidad}_{operacion}_{registro['_id'] if registro else 'nuevo'}"):
+            nombre = st.text_input("Nombre", value=registro["nombre"] if registro else "")
+            if entidad == "Usuarios":
+                email = st.text_input("Correo electrónico", value=registro["email"] if registro else "")
+                roles = ["cliente", "administrador"]
+                rol = st.selectbox("Rol", roles, index=roles.index(registro["rol"]) if registro else 0)
+                activo = st.checkbox("Activo", value=registro["activo"] if registro else True)
+                nacimiento_original = datetime.fromisoformat(registro["fecha_nacimiento"]) if registro else None
+                registro_original = datetime.fromisoformat(registro["fecha_registro"]) if registro else None
+                fecha_nacimiento = st.date_input("Fecha de nacimiento", value=nacimiento_original.date() if registro else date(2000, 1, 1), min_value=date.min, max_value=date.max)
+                fecha_registro = st.date_input("Fecha de registro", value=registro_original.date() if registro else date.today(), min_value=date.min, max_value=date.max)
+                st.caption("Al editar solo la fecha, se conservan la hora y la zona horaria originales.")
+            else:
+                descripcion = st.text_area("Descripción", value=registro["descripcion"] if registro else "")
+                fecha_original = datetime.fromisoformat(registro["fecha_evento"]) if registro else None
+                zona = str(fecha_original.tzinfo) if fecha_original and fecha_original.tzinfo else "UTC"
+                st.caption(f"Fecha y hora en {zona}. Se conserva la zona horaria recibida al editar.")
+                fecha_evento = st.date_input("Fecha del evento", value=fecha_original.date() if registro else date.today(), min_value=date.min, max_value=date.max)
+                hora_evento = st.time_input("Hora del evento", value=fecha_original.time().replace(microsecond=0) if registro else time(20), step=1)
+                estados = ["programado", "agotado", "finalizado", "cancelado"]
+                estado = st.selectbox("Estado", estados, index=estados.index(registro["estado"]) if registro else 0)
+                activo = st.checkbox("Activo", value=registro["activo"] if registro else True)
+                st.write("Recinto")
+                recinto_actual = registro["recinto"] if registro else {}
+                nombre_recinto = st.text_input("Nombre del recinto", value=recinto_actual.get("nombre", ""))
+                ciudad_recinto = st.text_input("Ciudad", value=recinto_actual.get("ciudad", ""))
+                direccion_recinto = st.text_input("Dirección", value=recinto_actual.get("direccion", ""))
+                capacidad = st.number_input("Capacidad", min_value=1, value=recinto_actual.get("capacidad", 1), step=1)
+                st.write("Tipos de entrada")
+                entradas_actuales = registro["tickets_disponibles"] if registro else [
+                    {"tipo": "General", "precio": 0.0, "stock_inicial": 0, "stock_disponible": 0}
+                ]
+                tabla_entradas = pd.DataFrame(entradas_actuales)
+                tabla_entradas["precio"] = tabla_entradas["precio"].astype(float)
+                entradas = st.data_editor(
+                    tabla_entradas, hide_index=True, num_rows="dynamic" if operacion == "Crear" else "fixed",
+                    column_config={
+                        "tipo": st.column_config.TextColumn("Tipo", required=True),
+                        "precio": st.column_config.NumberColumn("Precio (CLP)", min_value=0, required=True),
+                        "stock_inicial": st.column_config.NumberColumn("Stock inicial", min_value=0, step=1, required=True),
+                        "stock_disponible": st.column_config.NumberColumn("Stock disponible", min_value=0, step=1, required=True),
+                    },
+                )
+            guardar = st.form_submit_button("Crear registro" if operacion == "Crear" else "Guardar cambios")
+
+        if guardar:
+            st.session_state.pop("mensaje_admin", None)
+            documento = None
+            if entidad == "Usuarios":
+                if not nombre.strip() or not re.fullmatch(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", email.strip()):
+                    st.warning("Ingresa un nombre y un correo electrónico válido.")
+                elif not isinstance(fecha_nacimiento, date) or not isinstance(fecha_registro, date):
+                    st.warning("Completa ambas fechas.")
+                else:
+                    documento = {"nombre": nombre.strip(), "email": email.strip(), "rol": rol, "activo": activo}
+                    for campo, fecha in (("fecha_nacimiento", fecha_nacimiento), ("fecha_registro", fecha_registro)):
+                        if registro:
+                            original = datetime.fromisoformat(registro[campo])
+                            documento[campo] = registro[campo] if fecha == original.date() else original.replace(year=fecha.year, month=fecha.month, day=fecha.day).isoformat()
+                        else:
+                            documento[campo] = datetime.combine(fecha, time.min).isoformat()
+            else:
+                stocks = entradas[["stock_inicial", "stock_disponible"]]
+                if not all(valor.strip() for valor in (nombre, descripcion, nombre_recinto, ciudad_recinto, direccion_recinto)):
+                    st.warning("Completa los datos del evento y del recinto.")
+                elif not isinstance(fecha_evento, date) or not isinstance(hora_evento, time):
+                    st.warning("Completa la fecha y hora del evento.")
+                elif entradas.empty or entradas.isna().any().any() or not entradas["tipo"].map(lambda tipo: isinstance(tipo, str) and bool(tipo.strip())).all():
+                    st.warning("Ingresa al menos un tipo de entrada con todos sus campos.")
+                elif (entradas["precio"] < 0).any() or (stocks < 0).any().any() or (stocks % 1 != 0).any().any():
+                    st.warning("El precio debe ser no negativo y los stocks deben ser enteros no negativos.")
+                else:
+                    if registro:
+                        if fecha_evento == fecha_original.date() and hora_evento == fecha_original.time().replace(microsecond=0):
+                            fecha_iso = registro["fecha_evento"]
+                        else:
+                            fecha_iso = fecha_original.replace(year=fecha_evento.year, month=fecha_evento.month, day=fecha_evento.day, hour=hora_evento.hour, minute=hora_evento.minute, second=hora_evento.second).isoformat()
+                    else:
+                        fecha_iso = datetime.combine(fecha_evento, hora_evento).isoformat()
+                    documento = {
+                        "nombre": nombre.strip(), "descripcion": descripcion.strip(), "fecha_evento": fecha_iso,
+                        "estado": estado, "activo": activo,
+                        "recinto": {"nombre": nombre_recinto.strip(), "ciudad": ciudad_recinto.strip(), "direccion": direccion_recinto.strip(), "capacidad": capacidad},
+                        "tickets_disponibles": [
+                            {"tipo": fila["tipo"], "precio": float(fila["precio"]), "stock_inicial": int(fila["stock_inicial"]), "stock_disponible": int(fila["stock_disponible"])}
+                            for fila in entradas.to_dict("records")
+                        ],
+                    }
+            if documento is not None:
+                destino = endpoint if operacion == "Crear" else f"{endpoint}{registro['_id']}"
+                resultado_admin = enviar_api("POST" if operacion == "Crear" else "PUT", destino, documento)
+                if resultado_admin is not None:
+                    st.session_state["mensaje_admin"] = resultado_admin["mensaje"]
+
+    if st.session_state.get("mensaje_admin"):
+        st.success("Última operación confirmada: " + st.session_state["mensaje_admin"])
+        st.caption("Selecciona Listar y pulsa Actualizar listado para consultar los datos actuales.")
