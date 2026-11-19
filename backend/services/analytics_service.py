@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from backend.database import get_database
 
 
@@ -169,6 +170,42 @@ def reporte_ventas_eventos():
                         "Por Mejorar"
                     ]
                 }
+            }
+        }
+    ]
+    return list(get_database().eventos.aggregate(pipeline))
+
+
+def eventos_futuros(ciudad: str, precio_maximo: float):
+    fecha_actual = datetime.now(timezone.utc)
+    pipeline = [
+        {
+            "$match": {
+                "fecha_evento": {"$gt": fecha_actual},
+                "recinto.ciudad": ciudad,
+                "estado": "programado"
+            }
+        },
+        {"$unwind": "$tickets_disponibles"},
+        {
+            "$match": {
+                "tickets_disponibles.stock_disponible": {
+                    "$gt": 0
+                },
+                "tickets_disponibles.precio": {
+                    "$lt": precio_maximo
+                }
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "evento": "$nombre",
+                "fecha_evento": 1,
+                "ciudad": "$recinto.ciudad",
+                "tipo_ticket": "$tickets_disponibles.tipo",
+                "precio": "$tickets_disponibles.precio",
+                "stock_disponible": "$tickets_disponibles.stock_disponible"
             }
         }
     ]

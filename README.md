@@ -271,3 +271,26 @@ En [Swagger](http://localhost:8000/docs), abre **Analítica**, selecciona
 `GET /api/v1/analytics/reporte-ventas-eventos` y pulsa **Try it out** y **Execute**.
 Responde HTTP `200` con una lista de resultados o con `[]` si no existen eventos.
 Los eventos sin compras tienen recaudación y entradas vendidas iguales a cero.
+
+## Eventos futuros con filtros
+
+`GET /api/v1/analytics/eventos-futuros` reutiliza la Consulta 3 de la Evaluación 2
+sobre `eventos`. Recibe dos parámetros opcionales: `ciudad`, predeterminado en
+`Santiago`, y `precio_maximo`, predeterminado en `25000`.
+
+Selecciona eventos posteriores a la fecha UTC actual, con estado `programado`
+y en la ciudad indicada, sin filtrar por `activo`. Devuelve cada tipo de ticket
+por separado si tiene stock disponible mayor que cero y su precio es
+estrictamente menor que el límite; un precio igual al límite queda excluido.
+
+Cada resultado contiene `evento`, `fecha_evento`, `ciudad`, `tipo_ticket`,
+`precio` y `stock_disponible`. Responde HTTP `200` con los resultados o con `[]`
+si no hay coincidencias.
+
+En [Swagger](http://localhost:8000/docs), abre **Analítica**, selecciona este GET
+y pulsa **Try it out** y **Execute** para probar los valores predeterminados.
+Puedes cambiar ambos parámetros, por ejemplo:
+
+```text
+/api/v1/analytics/eventos-futuros?ciudad=Concepción&precio_maximo=30000
+```
