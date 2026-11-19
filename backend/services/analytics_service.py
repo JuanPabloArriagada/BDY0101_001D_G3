@@ -210,3 +210,71 @@ def eventos_futuros(ciudad: str, precio_maximo: float):
         }
     ]
     return list(get_database().eventos.aggregate(pipeline))
+
+
+def clientes_frecuentes():
+    pipeline = [
+        {
+            "$match": {
+                "rol": "cliente"
+            }
+        },
+        {
+            "$lookup": {
+                "from": "ordenes_compra",
+                "let": {"idUsuario": "$_id"},
+                "pipeline": [
+                    {
+                        "$match": {
+                            "$expr": {
+                                "$eq": ["$usuario_id", "$$idUsuario"]
+                            }
+                        }
+                    },
+                    {
+                        "$match": {
+                            "estado": "confirmada"
+                        }
+                    }
+                ],
+                "as": "compras"
+            }
+        },
+        {
+            "$addFields": {
+                "cantidad_compras": {
+                    "$size": "$compras"
+                },
+                "total_gastado": {
+                    "$sum": "$compras.total"
+                }
+            }
+        },
+        {
+            "$addFields": {
+                "tipo_cliente": {
+                    "$cond": [
+                        {"$gte": ["$cantidad_compras", 2]},
+                        "Frecuente",
+                        "Ocasional"
+                    ]
+                }
+            }
+        },
+        {
+            "$match": {
+                "cantidad_compras": {"$gte": 2}
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "nombre": 1,
+                "email": 1,
+                "cantidad_compras": 1,
+                "total_gastado": 1,
+                "tipo_cliente": 1
+            }
+        }
+    ]
+    return list(get_database().usuarios.aggregate(pipeline))

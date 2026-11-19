@@ -294,3 +294,20 @@ Puedes cambiar ambos parámetros, por ejemplo:
 ```text
 /api/v1/analytics/eventos-futuros?ciudad=Concepción&precio_maximo=30000
 ```
+
+## Clientes frecuentes
+
+`GET /api/v1/analytics/clientes-frecuentes` no recibe parámetros y reutiliza
+la Consulta 4 de la Evaluación 2. Relaciona `usuarios` con `ordenes_compra`
+para identificar usuarios con rol `cliente` que tengan al menos dos órdenes
+confirmadas, incluidos los clientes inactivos.
+
+Devuelve `nombre`, `email`, `cantidad_compras`, `total_gastado` y `tipo_cliente`.
+La cantidad cuenta órdenes confirmadas y el gasto suma el campo `total` de esas
+órdenes. La clasificación conserva `Frecuente` y `Ocasional`; el filtro final
+devuelve únicamente clientes de tipo `Frecuente`.
+
+En [Swagger](http://localhost:8000/docs), abre **Analítica**, selecciona
+`GET /api/v1/analytics/clientes-frecuentes` y pulsa **Try it out** y **Execute**.
+Responde HTTP `200` con los resultados o con `[]` si ningún cliente cumple
+el criterio.
