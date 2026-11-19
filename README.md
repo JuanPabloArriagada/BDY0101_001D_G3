@@ -428,3 +428,36 @@ streamlit run frontend/app.py
 
 Abre [http://localhost:8501](http://localhost:8501) y selecciona **Dashboard**
 en el menú lateral para ver los tres indicadores.
+
+## Consulta 1 en Analítica: compras por usuario y ciudad
+
+En **Analítica**, el formulario **Compras por usuario y ciudad** consulta
+`GET /api/v1/analytics/compras-por-usuario-ciudad` mediante los parámetros
+`email` y `ciudad`. Muestra las compras confirmadas de ese usuario en eventos
+de la ciudad indicada.
+
+Los campos son editables y comienzan con `usuario1@eventify.cl` y `Santiago`,
+como en la Evaluación 2. La solicitud se realiza únicamente al pulsar
+**Consultar compras**. Se eliminan los espacios iniciales y finales; si falta
+algún filtro, aparece una advertencia y no se consulta la API.
+
+Cuando hay resultados, se muestra el usuario, la ciudad y la métrica **Gasto
+total**, tomada directamente de `gasto_total` de FastAPI y presentada como
+pesos chilenos, sin decimales y con puntos como separadores de miles.
+
+La tabla conserva todas las compras, incluidas las repetidas, con las columnas
+**Evento**, **Tipo de entrada**, **Cantidad**, **Precio unitario** y **Subtotal**.
+Una copia permite formatear los importes sin modificar los datos numéricos.
+
+El gráfico de barras **Gasto por evento** suma los subtotales por nombre de
+evento únicamente para representarlos visualmente. No recalcula ni sustituye
+la métrica `gasto_total` y utiliza la misma respuesta HTTP que la tabla.
+
+Si no hay coincidencias, aparece un mensaje informativo. Si la consulta falla,
+se conserva el error del cliente HTTP y no se muestran resultados inventados.
+Las Consultas 2, 3 y 4 continúan como referencias informativas.
+
+Con FastAPI y Streamlit iniciados en terminales separadas, según las
+instrucciones anteriores, abre [http://localhost:8501](http://localhost:8501),
+selecciona **Analítica**, completa los filtros y pulsa **Consultar compras**
+para ver la métrica, la tabla y el gráfico.

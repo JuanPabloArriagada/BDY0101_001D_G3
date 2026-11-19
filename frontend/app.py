@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+import pandas as pd
+import plotly.express as px
 import requests
 import streamlit as st
 from dotenv import load_dotenv
@@ -60,13 +62,62 @@ elif seccion == "Dashboard":
 elif seccion == "Analítica":
     st.title("Analítica")
     st.caption("Reportes disponibles en el backend de Eventify Global.")
+    st.subheader("Compras por usuario y ciudad")
+    st.caption("Compras confirmadas de un usuario en eventos de la ciudad indicada.")
+
+    with st.form("consulta_compras"):
+        correo = st.text_input("Correo electrónico", value="usuario1@eventify.cl")
+        ciudad = st.text_input("Ciudad", value="Santiago")
+        consultar = st.form_submit_button("Consultar compras")
+
+    if consultar:
+        correo = correo.strip()
+        ciudad = ciudad.strip()
+        if not correo or not ciudad:
+            st.warning("Ingresa el correo electrónico y la ciudad.")
+        else:
+            datos = consultar_api(
+                "/api/v1/analytics/compras-por-usuario-ciudad",
+                params={"email": correo, "ciudad": ciudad},
+            )
+            if datos is not None:
+                if not datos:
+                    st.info("No se encontraron compras confirmadas para este usuario en la ciudad indicada.")
+                else:
+                    resultado = datos[0]
+                    st.write("Usuario:", resultado["usuario"])
+                    st.write("Ciudad:", resultado["ciudad"])
+                    st.metric("Gasto total", f"${resultado['gasto_total']:,.0f}".replace(",", "."))
+
+                    compras = pd.DataFrame(resultado["compras"])
+                    tabla = compras.copy()
+                    for columna in ("precio_unitario", "subtotal"):
+                        tabla[columna] = tabla[columna].map("${:,.0f}".format).str.replace(",", ".", regex=False)
+                    tabla = tabla.rename(columns={
+                        "evento": "Evento",
+                        "tipo_ticket": "Tipo de entrada",
+                        "cantidad": "Cantidad",
+                        "precio_unitario": "Precio unitario",
+                        "subtotal": "Subtotal",
+                    })
+                    st.dataframe(tabla, hide_index=True)
+
+                    gasto_evento = compras.groupby("evento", as_index=False)["subtotal"].sum()
+                    figura = px.bar(
+                        gasto_evento,
+                        x="evento",
+                        y="subtotal",
+                        title="Gasto por evento",
+                        labels={"evento": "Evento", "subtotal": "Gasto (CLP)"},
+                    )
+                    st.plotly_chart(figura)
+
     st.write(
-        "- Compras por usuario y ciudad.\n"
         "- Reporte de ventas por evento.\n"
         "- Eventos futuros con filtros.\n"
         "- Clientes frecuentes."
     )
-    st.info("Las visualizaciones de estos reportes se implementarán posteriormente.")
+    st.info("Las visualizaciones de estas tres consultas se incorporarán posteriormente.")
 else:
     st.title("Administración")
     st.caption("Gestión de usuarios y eventos de Eventify Global.")
