@@ -311,3 +311,34 @@ En [Swagger](http://localhost:8000/docs), abre **Analítica**, selecciona
 `GET /api/v1/analytics/clientes-frecuentes` y pulsa **Try it out** y **Execute**.
 Responde HTTP `200` con los resultados o con `[]` si ningún cliente cumple
 el criterio.
+
+## Indicadores de negocio (KPIs)
+
+`GET /api/v1/kpis` no recibe parámetros y devuelve tres indicadores calculados
+en MongoDB para el futuro dashboard.
+
+| Indicador | Cálculo | Utilidad |
+|---|---|---|
+| `recaudacion_total` | Suma de `total` de las órdenes confirmadas en `ordenes_compra`. | Mide el volumen de ventas confirmado. |
+| `gasto_promedio_orden` | Promedio de `total` de esas órdenes confirmadas. | Permite conocer el importe promedio gastado por orden. |
+| `calificacion_promedio` | Promedio de `puntuacion` de todas las reseñas de `resenas_evaluaciones`, en la escala de 1 a 5. | Permite observar la satisfacción de los asistentes. |
+
+Una sola agregación calcula la recaudación y el gasto promedio. Otra calcula la
+calificación promedio. Los promedios se redondean a dos decimales y los valores
+se devuelven como números, sin símbolos monetarios ni unidades.
+
+Si no hay órdenes confirmadas, los dos indicadores de compras son cero. Si no
+hay reseñas, la calificación promedio es cero. La respuesta es HTTP `200`.
+
+Ejemplo ilustrativo de respuesta, con valores ficticios:
+
+```json
+{
+  "recaudacion_total": 1500000,
+  "gasto_promedio_orden": 50000,
+  "calificacion_promedio": 4.2
+}
+```
+
+En [Swagger](http://localhost:8000/docs), abre **KPIs**, selecciona
+`GET /api/v1/kpis` y pulsa **Try it out** y **Execute** para consultar los valores.

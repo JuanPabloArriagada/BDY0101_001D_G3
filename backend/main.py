@@ -5,6 +5,7 @@ from backend.controllers import (
     ordenes_controller,
     resenas_controller,
     analytics_controller,
+    kpis_controller,
 )
 
 
@@ -15,6 +16,7 @@ app.include_router(eventos_controller.router)
 app.include_router(ordenes_controller.router)
 app.include_router(resenas_controller.router)
 app.include_router(analytics_controller.router)
+app.include_router(kpis_controller.router)
 
 
 @app.get("/", tags=["General"])
