@@ -251,3 +251,23 @@ en `ciudad`, y pulsa **Execute**. La solicitud equivalente es:
 
 Responde HTTP `200` con los resultados o con `[]` si no hay coincidencias.
 Si falta alguno de los parámetros, FastAPI responde automáticamente HTTP `422`.
+
+## Reporte de ventas por evento
+
+`GET /api/v1/analytics/reporte-ventas-eventos` no recibe parámetros y reutiliza
+la Consulta 2 de la Evaluación 2. Relaciona `eventos` con `ordenes_compra` y
+devuelve todos los eventos, incluidos los inactivos y aquellos sin compras.
+
+Cada resultado contiene `evento`, `ciudad`, `stock_inicial`, `total_recaudado`,
+`tickets_vendidos`, `porcentaje_venta` y `etiqueta`. El stock inicial suma el de
+los tickets del evento; la recaudación y las entradas vendidas consideran
+únicamente órdenes confirmadas.
+
+El porcentaje es `(tickets_vendidos / stock_inicial) * 100`, sin redondeos
+adicionales. Si el stock inicial es cero, el porcentaje es cero. Desde el 70 %
+la etiqueta es `Exitoso`; por debajo es `Por Mejorar`.
+
+En [Swagger](http://localhost:8000/docs), abre **Analítica**, selecciona
+`GET /api/v1/analytics/reporte-ventas-eventos` y pulsa **Try it out** y **Execute**.
+Responde HTTP `200` con una lista de resultados o con `[]` si no existen eventos.
+Los eventos sin compras tienen recaudación y entradas vendidas iguales a cero.
