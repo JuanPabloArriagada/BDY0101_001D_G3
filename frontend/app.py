@@ -16,6 +16,10 @@ API_BASE_URL = (os.getenv("API_BASE_URL") or "http://localhost:8000").rstrip("/"
 st.set_page_config(page_title="Eventify Global", layout="wide")
 
 
+def formato_pesos(valor):
+    return f"${valor:,.0f}".replace(",", ".")
+
+
 def consultar_api(endpoint: str, params: dict = None):
     try:
         respuesta = requests.get(
@@ -58,11 +62,10 @@ def enviar_api(metodo, endpoint, datos=None):
         if isinstance(detalle, str):
             st.error(f"HTTP {codigo}: {detalle}")
         elif isinstance(detalle, list):
-            mensajes = [
-                f"{'.'.join(str(campo) for campo in error.get('loc', []))}: {error.get('msg', 'Dato inválido')}"
-                for error in detalle if isinstance(error, dict)
-            ]
-            st.error(f"HTTP {codigo}: " + "; ".join(mensajes))
+            st.error(f"HTTP {codigo}: Revisa los campos del formulario.")
+            for error in detalle:
+                if isinstance(error, dict):
+                    st.write(error.get("msg", "Dato inválido"))
         else:
             st.error(f"La API respondió con un error HTTP {codigo}.")
     except requests.exceptions.Timeout:
@@ -86,20 +89,15 @@ if seccion == "Inicio":
     if st.button("Comprobar conexión"):
         datos = consultar_api("/")
         if datos is not None:
-            st.success("Conexión con FastAPI establecida.")
-            st.write(datos["mensaje"])
+            st.success(datos["mensaje"])
 elif seccion == "Dashboard":
     st.title("Dashboard")
     st.caption("Indicadores de negocio de Eventify Global")
     datos = consultar_api("/api/v1/kpis")
     if datos is not None:
         col1, col2, col3 = st.columns(3)
-        col1.metric(
-            "Recaudación total", f"${datos['recaudacion_total']:,.0f}".replace(",", ".")
-        )
-        col2.metric(
-            "Gasto promedio por orden", f"${datos['gasto_promedio_orden']:,.0f}".replace(",", ".")
-        )
+        col1.metric("Recaudación total", formato_pesos(datos["recaudacion_total"]))
+        col2.metric("Gasto promedio por orden", formato_pesos(datos["gasto_promedio_orden"]))
         col3.metric(
             "Calificación promedio", f"{datos['calificacion_promedio']:.2f} / 5".replace(".", ",")
         )
@@ -131,12 +129,12 @@ elif seccion == "Analítica":
                     resultado = datos[0]
                     st.write("Usuario:", resultado["usuario"])
                     st.write("Ciudad:", resultado["ciudad"])
-                    st.metric("Gasto total", f"${resultado['gasto_total']:,.0f}".replace(",", "."))
+                    st.metric("Gasto total", formato_pesos(resultado["gasto_total"]))
 
                     compras = pd.DataFrame(resultado["compras"])
                     tabla = compras.copy()
                     for columna in ("precio_unitario", "subtotal"):
-                        tabla[columna] = tabla[columna].map("${:,.0f}".format).str.replace(",", ".", regex=False)
+                        tabla[columna] = tabla[columna].map(formato_pesos)
                     tabla = tabla.rename(columns={
                         "evento": "Evento",
                         "tipo_ticket": "Tipo de entrada",
@@ -146,13 +144,13 @@ elif seccion == "Analítica":
                     })
                     st.dataframe(tabla, hide_index=True)
 
-                    gasto_evento = compras.groupby("evento", as_index=False)["subtotal"].sum()
                     figura = px.bar(
-                        gasto_evento,
-                        x="evento",
-                        y="subtotal",
-                        title="Gasto por evento",
-                        labels={"evento": "Evento", "subtotal": "Gasto (CLP)"},
+                        pd.DataFrame(datos),
+                        x="ciudad",
+                        y="gasto_total",
+                        color="usuario",
+                        title="Gasto total por usuario y ciudad",
+                        labels={"ciudad": "Ciudad", "usuario": "Usuario", "gasto_total": "Gasto total (CLP)"},
                     )
                     st.plotly_chart(figura)
 
@@ -169,7 +167,7 @@ elif seccion == "Analítica":
             else:
                 ventas = pd.DataFrame(datos_ventas)
                 tabla_ventas = ventas.copy()
-                tabla_ventas["total_recaudado"] = tabla_ventas["total_recaudado"].map("${:,.0f}".format).str.replace(",", ".", regex=False)
+                tabla_ventas["total_recaudado"] = tabla_ventas["total_recaudado"].map(formato_pesos)
                 tabla_ventas["porcentaje_venta"] = tabla_ventas["porcentaje_venta"].map("{:.2f} %".format).str.replace(".", ",", regex=False)
                 tabla_ventas = tabla_ventas.rename(columns={
                     "evento": "Evento",
@@ -183,9 +181,10 @@ elif seccion == "Analítica":
                 st.dataframe(tabla_ventas, hide_index=True)
 
                 graficos_ventas = ventas.copy()
-                graficos_ventas["evento_visual"] = graficos_ventas["evento"] + " — " + graficos_ventas["ciudad"]
-                repetidos = graficos_ventas["evento_visual"].duplicated(keep=False)
-                graficos_ventas.loc[repetidos, "evento_visual"] += " [" + (graficos_ventas.index[repetidos] + 1).astype(str) + "]"
+                etiquetas = []
+                for numero, evento in enumerate(datos_ventas, start=1):
+                    etiquetas.append(f"{numero}. {evento['evento']} — {evento['ciudad']}")
+                graficos_ventas["evento_visual"] = etiquetas
 
                 for campo, titulo, eje in (
                     ("total_recaudado", "Top 10 eventos por recaudación", "Recaudación (CLP)"),
@@ -230,7 +229,7 @@ elif seccion == "Analítica":
                     tabla_disponibilidad = disponibilidad.copy()
                     fechas_visibles = disponibilidad["fecha_evento"].str.replace("T", " ", n=1, regex=False)
                     tabla_disponibilidad["fecha_evento"] = fechas_visibles
-                    tabla_disponibilidad["precio"] = tabla_disponibilidad["precio"].map("${:,.0f}".format).str.replace(",", ".", regex=False)
+                    tabla_disponibilidad["precio"] = tabla_disponibilidad["precio"].map(formato_pesos)
                     tabla_disponibilidad = tabla_disponibilidad.rename(columns={
                         "evento": "Evento",
                         "fecha_evento": "Fecha del evento",
@@ -242,17 +241,17 @@ elif seccion == "Analítica":
                     st.dataframe(tabla_disponibilidad, hide_index=True)
 
                     grafico_disponibilidad = disponibilidad.copy()
-                    grafico_disponibilidad["entrada_visual"] = disponibilidad["evento"] + " — " + disponibilidad["tipo_ticket"]
-                    repetidas = grafico_disponibilidad["entrada_visual"].duplicated(keep=False)
-                    grafico_disponibilidad.loc[repetidas, "entrada_visual"] += " — " + fechas_visibles.loc[repetidas]
-                    if grafico_disponibilidad["entrada_visual"].duplicated().any():
-                        grafico_disponibilidad["entrada_visual"] += " [" + (grafico_disponibilidad.index + 1).astype(str) + "]"
+                    etiquetas = []
+                    for numero, entrada in enumerate(datos_disponibles, start=1):
+                        etiquetas.append(f"{numero}. {entrada['evento']} — {entrada['tipo_ticket']}")
+                    grafico_disponibilidad["entrada_visual"] = etiquetas
                     figura_disponibilidad = px.bar(
                         grafico_disponibilidad,
                         x="stock_disponible",
                         y="entrada_visual",
                         orientation="h",
                         title="Stock disponible por evento y tipo de entrada",
+                        hover_data=["fecha_evento", "ciudad", "precio"],
                         labels={"stock_disponible": "Stock disponible", "entrada_visual": "Evento y tipo de entrada"},
                     )
                     figura_disponibilidad.update_yaxes(autorange="reversed")
@@ -271,7 +270,7 @@ elif seccion == "Analítica":
             else:
                 clientes = pd.DataFrame(datos_clientes)
                 tabla_clientes = clientes.copy()
-                tabla_clientes["total_gastado"] = tabla_clientes["total_gastado"].map("${:,.0f}".format).str.replace(",", ".", regex=False)
+                tabla_clientes["total_gastado"] = tabla_clientes["total_gastado"].map(formato_pesos)
                 tabla_clientes = tabla_clientes.rename(columns={
                     "nombre": "Nombre",
                     "email": "Correo electrónico",
@@ -282,9 +281,10 @@ elif seccion == "Analítica":
                 st.dataframe(tabla_clientes, hide_index=True)
 
                 graficos_clientes = clientes.copy()
-                graficos_clientes["cliente_visual"] = clientes["nombre"] + " — " + clientes["email"]
-                repetidos = graficos_clientes["cliente_visual"].duplicated(keep=False)
-                graficos_clientes.loc[repetidos, "cliente_visual"] += " [" + (graficos_clientes.index[repetidos] + 1).astype(str) + "]"
+                etiquetas = []
+                for numero, cliente in enumerate(datos_clientes, start=1):
+                    etiquetas.append(f"{numero}. {cliente['nombre']} — {cliente['email']}")
+                graficos_clientes["cliente_visual"] = etiquetas
 
                 for campo, titulo, eje in (
                     ("total_gastado", "Top 10 clientes por gasto total", "Total gastado (CLP)"),
@@ -302,7 +302,6 @@ elif seccion == "Analítica":
                     figura_clientes.update_yaxes(autorange="reversed")
                     st.plotly_chart(figura_clientes)
 
-    st.info("Las cuatro consultas originales de la Evaluación 2 están disponibles.")
 else:
     st.title("Administración")
     st.caption("Gestión de usuarios y eventos de Eventify Global.")
@@ -458,4 +457,3 @@ else:
 
     if st.session_state.get("mensaje_admin"):
         st.success("Última operación confirmada: " + st.session_state["mensaje_admin"])
-        st.caption("Selecciona Listar y pulsa Actualizar listado para consultar los datos actuales.")
