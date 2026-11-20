@@ -263,28 +263,10 @@ antes de repetir, porque la operación podría haberse aplicado.
 
 ## Base de datos de la Evaluación 2
 
-[G3_Arriagada_Gonzales_001D.mongodb.js](scripts/G3_Arriagada_Gonzales_001D.mongodb.js)
+[G3_Arriagada_Gonzales_001D.mongodb.js](scripts/G3_Arriagada_Gonzalez_001D.mongodb.js)
 se conserva íntegro. Define `eventify_db`, sus cuatro colecciones, validaciones
 `$jsonSchema`, datos de prueba y consultas originales.
 
 **Advertencia: contiene `db.dropDatabase()`. Ejecutarlo elimina las colecciones
 y datos existentes de `eventify_db` antes de recrearlos. No forma parte del
 inicio de la aplicación.**
-
-## Estado de las comprobaciones
-
-La **tarea #32 permanece pendiente y suspendida**. No es un requisito para
-continuar y esta simplificación no completa su batería de pruebas.
-
-Las comprobaciones básicas utilizan solicitudes interceptadas para escrituras
-y exclusivamente lecturas en la integración real.
-
-**Comprobación básica (20-11-2026):** se verificaron la importación de FastAPI,
-sus 16 operaciones, las cuatro secciones de Streamlit, los tres KPIs y las
-cuatro visualizaciones. Consulta 1 utiliza el total recibido de la API.
-Las escrituras administrativas fueron interceptadas; se conservaron fechas,
-varios tipos de entrada y la confirmación de desactivación.
-
-La API y Swagger iniciaron correctamente. La lectura real de Atlas quedó
-pendiente por `ReadTimeout`; un ping acotado devolvió
-`ServerSelectionTimeoutError`. No se modificaron credenciales ni datos.
