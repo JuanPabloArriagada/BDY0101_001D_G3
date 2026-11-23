@@ -1,6 +1,6 @@
 use("eventify_db");
 // dropdatabase lo estoy usando para que el archivo se pueda ejecutar todo de una sola vez
-db.dropDatabase();
+//db.dropDatabase();
 
 //colecciones
 use("eventify_db");

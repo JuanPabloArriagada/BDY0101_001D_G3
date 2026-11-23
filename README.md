@@ -262,10 +262,21 @@ antes de repetir, porque la operación podría haberse aplicado.
 
 ## Base de datos de la Evaluación 2
 
-[G3_Arriagada_Gonzales_001D.mongodb.js](scripts/G3_Arriagada_Gonzalez_001D.mongodb.js)
+[G3_Arriagada_Gonzalez_001D.mongodb.js](scripts/G3_Arriagada_Gonzalez_001D.mongodb.js)
 se conserva íntegro. Define `eventify_db`, sus cuatro colecciones, validaciones
 `$jsonSchema`, datos de prueba y consultas originales.
 
-**Advertencia: contiene `db.dropDatabase()`. Ejecutarlo elimina las colecciones
-y datos existentes de `eventify_db` antes de recrearlos. No forma parte del
-inicio de la aplicación.**
+El mismo contenido está separado en tres archivos, en este orden:
+
+1. [01_colecciones.mongodb.js](scripts/01_colecciones.mongodb.js): crea las cuatro
+   colecciones con sus validaciones y conserva el reinicio de la base original.
+2. [02_poblar_colecciones.mongodb.js](scripts/02_poblar_colecciones.mongodb.js):
+   inserta los 50 documentos de prueba por colección. Repetirlo vuelve a cargar datos.
+3. [03_consultas.mongodb.js](scripts/03_consultas.mongodb.js): contiene las lecturas
+   de las colecciones y las cuatro consultas de agregación.
+
+El original se mantiene como respaldo; utiliza los archivos separados como alternativa.
+
+**Advertencia: el original y `01_colecciones.mongodb.js` contienen `db.dropDatabase()`.
+Ejecutarlos elimina las colecciones y datos existentes de `eventify_db` antes
+de recrearlos. Ninguno forma parte del inicio de la aplicación.**
