@@ -71,7 +71,6 @@ API_BASE_URL=http://localhost:8000
 ```
 
 `MONGO_URI` contiene la cadena completa, incluidas las credenciales.
-Cada integrante o la profesora puede usar su propia configuración.
 Para operaciones CRUD, el usuario de Atlas necesita permisos `readWrite` sobre
 `eventify_db` y la IP del equipo debe estar permitida en Atlas.
 Los archivos `.env`, el entorno virtual y las cachés están excluidos de Git.
