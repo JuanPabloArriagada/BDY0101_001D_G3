@@ -68,7 +68,7 @@ def compras_por_usuario_ciudad(email: str, ciudad: str):
     return list(get_database().ordenes_compra.aggregate(pipeline))
 
 
-def reporte_ventas_eventos():
+def reporte_ventas_eventos(umbral: float = 70):
     pipeline = [
         {
             "$project": {
@@ -165,7 +165,7 @@ def reporte_ventas_eventos():
                 "porcentaje_venta": 1,
                 "etiqueta": {
                     "$cond": [
-                        {"$gte": ["$porcentaje_venta", 70]},
+                        {"$gte": ["$porcentaje_venta", umbral]},
                         "Exitoso",
                         "Por Mejorar"
                     ]
@@ -183,7 +183,8 @@ def eventos_futuros(ciudad: str, precio_maximo: float):
             "$match": {
                 "fecha_evento": {"$gt": fecha_actual},
                 "recinto.ciudad": ciudad,
-                "estado": "programado"
+                "estado": "programado",
+                "activo": True
             }
         },
         {"$unwind": "$tickets_disponibles"},
@@ -212,7 +213,7 @@ def eventos_futuros(ciudad: str, precio_maximo: float):
     return list(get_database().eventos.aggregate(pipeline))
 
 
-def clientes_frecuentes():
+def clientes_frecuentes(minimo: int = 2):
     pipeline = [
         {
             "$match": {
@@ -254,7 +255,7 @@ def clientes_frecuentes():
             "$addFields": {
                 "tipo_cliente": {
                     "$cond": [
-                        {"$gte": ["$cantidad_compras", 2]},
+                        {"$gte": ["$cantidad_compras", minimo]},
                         "Frecuente",
                         "Ocasional"
                     ]
@@ -263,7 +264,7 @@ def clientes_frecuentes():
         },
         {
             "$match": {
-                "cantidad_compras": {"$gte": 2}
+                "cantidad_compras": {"$gte": minimo}
             }
         },
         {

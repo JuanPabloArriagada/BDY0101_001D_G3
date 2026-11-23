@@ -15,8 +15,8 @@ def obtener_compras_por_usuario_ciudad(email: str, ciudad: str):
 
 
 @router.get("/reporte-ventas-eventos")
-def obtener_reporte_ventas_eventos():
-    return reporte_ventas_eventos()
+def obtener_reporte_ventas_eventos(umbral: float = 70):
+    return reporte_ventas_eventos(umbral)
 
 
 @router.get("/eventos-futuros")
@@ -25,5 +25,5 @@ def obtener_eventos_futuros(ciudad: str = "Santiago", precio_maximo: float = 250
 
 
 @router.get("/clientes-frecuentes")
-def obtener_clientes_frecuentes():
-    return clientes_frecuentes()
+def obtener_clientes_frecuentes(minimo: int = 2):
+    return clientes_frecuentes(minimo)
